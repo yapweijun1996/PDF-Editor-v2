@@ -254,14 +254,22 @@ function renderAnnotations() {
       if (selectedAnno && a.id === selectedAnno.id) {
         el.classList.add('selected');
       }
-      // Append, then measure height
+      // Append, then measure size
       overlayContainer.appendChild(el);
       // Convert PDF point to CSS pixel
       const [xPx, yPx] = currentViewport.convertToViewportPoint(a.x, a.y);
-      const h = el.offsetHeight;
+      const elWidth = el.offsetWidth;
+      const elHeight = el.offsetHeight;
+      // Calculate left offset based on alignment
+      let leftPx = xPx;
+      if (a.align === 'center') {
+        leftPx = xPx - elWidth / 2;
+      } else if (a.align === 'right') {
+        leftPx = xPx - elWidth;
+      }
       // Position element so its bottom aligns with baseline
-      el.style.left = `${xPx}px`;
-      el.style.top = `${yPx - h}px`;
+      el.style.left = `${leftPx}px`;
+      el.style.top = `${yPx - elHeight}px`;
       // Drag events
       el.addEventListener('mousedown', annotationMouseDown);
     });

@@ -47,6 +47,7 @@ const dropZone = document.getElementById('dropZone');
 const fileNameEl = document.getElementById('fileName');
 const canvas = document.getElementById('pdfCanvas');
 const ctx = canvas.getContext('2d');
+const sidebar = document.getElementById('sidebar');
 const firstPageBtn = document.getElementById('firstPageBtn');
 const prevPageBtn = document.getElementById('prevPageBtn');
 const nextPageBtn = document.getElementById('nextPageBtn');
@@ -76,6 +77,7 @@ const uploadProgress = document.getElementById('uploadProgress');
 const thumbnailContainer = document.getElementById('thumbnailContainer');
 const errorMessage = document.getElementById('errorMessage');
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const pageLoader = document.getElementById('pageLoader');
 
 // Update undo/redo button states
 function updateUndoRedoButtons() {
@@ -118,6 +120,8 @@ async function loadArrayBuffer(buffer, file) {
 
   // Render
   await renderPage();
+  // Populate sidebar thumbnails
+  await generateSidebarThumbnails();
 }
 
 // Toggle shape drawing modes
@@ -213,6 +217,8 @@ async function renderPage() {
   if (!pdfjsDoc) {
     return;
   }
+  // Show loading spinner
+  pageLoader.hidden = false;
   const page = await pdfjsDoc.getPage(currentPage);
   const viewport = page.getViewport({ scale: zoomLevel });
   currentViewport = viewport;
@@ -230,6 +236,10 @@ async function renderPage() {
   renderAnnotations();
   // Update navigation controls
   updateNavButtons();
+  // Update sidebar selection
+  updateSidebarSelection();
+  // Hide loading spinner
+  pageLoader.hidden = true;
 }
 
 // Render annotations for current page
@@ -694,4 +704,38 @@ async function generateThumbnail() {
   const img = new Image();
   img.src = canvasThumb.toDataURL();
   thumbnailContainer.appendChild(img);
+}
+
+// New: generate thumbnails in sidebar for each page
+async function generateSidebarThumbnails() {
+  if (!pdfjsDoc) return;
+  sidebar.innerHTML = '';
+  for (let i = 1; i <= totalPages; i++) {
+    const page = await pdfjsDoc.getPage(i);
+    const viewport = page.getViewport({ scale: 0.2 });
+    const canvasThumb = document.createElement('canvas');
+    const ctxThumb = canvasThumb.getContext('2d');
+    canvasThumb.width = viewport.width;
+    canvasThumb.height = viewport.height;
+    await page.render({ canvasContext: ctxThumb, viewport }).promise;
+    const img = new Image();
+    img.src = canvasThumb.toDataURL();
+    const thumbDiv = document.createElement('div');
+    thumbDiv.className = 'thumb';
+    if (i === currentPage) thumbDiv.classList.add('selected');
+    thumbDiv.appendChild(img);
+    thumbDiv.addEventListener('click', async () => {
+      currentPage = i;
+      await renderPage();
+    });
+    sidebar.appendChild(thumbDiv);
+  }
+}
+
+// New: highlight the current thumbnail
+function updateSidebarSelection() {
+  const thumbs = sidebar.querySelectorAll('.thumb');
+  thumbs.forEach((thumb, idx) => {
+    thumb.classList.toggle('selected', idx + 1 === currentPage);
+  });
 } 

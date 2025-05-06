@@ -263,4 +263,92 @@ footer {
 .shape-controls button.active {
   background: var(--primary-color);
   color: #fff;
+}
+
+/* Loading spinner overlay */
+.loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color);
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 1000;
+}
+@keyframes spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Mobile-responsive adjustments */
+@media (max-width: 600px) {
+  /* Make toolbar horizontally scrollable and enlarge touch targets */
+  .toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .toolbar button,
+  .toolbar select,
+  .toolbar input[type="color"] {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    font-size: 1rem;
+    min-width: 44px;
+  }
+  /* Stack controls vertically and full width */
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .controls input[type="text"],
+  .controls input[type="number"],
+  .controls select,
+  .controls input[type="color"] {
+    width: 100%;
+    min-height: 44px;
+  }
+  /* Ensure shape-tools are touch-friendly */
+  .shape-controls button,
+  .shape-controls input {
+    min-height: 44px;
+  }
+}
+
+/* Thumbnail sidebar for page navigation */
+.thumbnail-sidebar {
+  width: 80px;
+  background: var(--panel-bg);
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+  padding: 8px;
+  flex-shrink: 0;
+}
+.thumbnail-sidebar .thumb {
+  margin-bottom: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.thumbnail-sidebar .thumb img {
+  width: 100%;
+  display: block;
+  border-radius: 2px;
+}
+.thumbnail-sidebar .thumb.selected {
+  border-color: var(--primary-color);
+}
+
+/* Layout container for sidebar and viewer */
+.main-content {
+  display: flex;
+  align-items: flex-start;
+}
+/* Allow viewer to grow and fill space */
+.viewer-container {
+  flex-grow: 1;
 } 

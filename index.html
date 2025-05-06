@@ -52,9 +52,13 @@
         <input type="number" id="borderWidthInput" title="Border Width (pt)" placeholder="Border width" value="1" step="0.1" />
       </div>
     </div>
-    <div class="viewer-container">
-      <canvas id="pdfCanvas" class="viewer"></canvas>
-      <div id="overlayContainer"></div>
+    <div class="main-content">
+      <div id="sidebar" class="thumbnail-sidebar"></div>
+      <div class="viewer-container">
+        <div id="pageLoader" class="loader" hidden></div>
+        <canvas id="pdfCanvas" class="viewer"></canvas>
+        <div id="overlayContainer"></div>
+      </div>
     </div>
     <div class="controls">
       <h2>Add Text (click on canvas to place)</h2>

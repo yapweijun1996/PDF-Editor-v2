@@ -72,6 +72,33 @@ h1 {
   margin-left: 8px;
 }
 
+#uploadProgress {
+  margin-left: 12px;
+  width: 150px;
+  height: 16px;
+}
+
+#thumbnailContainer {
+  margin-left: 12px;
+  width: 40px;
+  height: 50px;
+  border: 1px solid var(--border-color);
+  display: inline-block;
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+#thumbnailContainer img {
+  width: 100%;
+  height: auto;
+}
+
+.error-message {
+  color: red;
+  margin-left: 12px;
+  font-size: 0.85rem;
+}
+
 .toolbar button,
 .toolbar select {
   padding: 6px 10px;

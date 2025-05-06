@@ -72,6 +72,10 @@ const nudgeLeftBtn = document.getElementById('nudgeLeftBtn');
 const nudgeRightBtn = document.getElementById('nudgeRightBtn');
 const nudgeUpBtn = document.getElementById('nudgeUpBtn');
 const nudgeDownBtn = document.getElementById('nudgeDownBtn');
+const uploadProgress = document.getElementById('uploadProgress');
+const thumbnailContainer = document.getElementById('thumbnailContainer');
+const errorMessage = document.getElementById('errorMessage');
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 // Update undo/redo button states
 function updateUndoRedoButtons() {
@@ -184,9 +188,31 @@ function renderHighlights() {
   });
 }
 
+// Update navigation buttons and page input state
+function updateNavButtons() {
+  if (!pdfjsDoc) {
+    firstPageBtn.disabled = prevPageBtn.disabled = nextPageBtn.disabled = lastPageBtn.disabled = true;
+    pageNumberInput.disabled = true;
+    pageNumberInput.value = '';
+    downloadBtn.disabled = true;
+  } else {
+    downloadBtn.disabled = false;
+    pageNumberInput.disabled = false;
+    firstPageBtn.disabled = currentPage <= 1;
+    prevPageBtn.disabled = currentPage <= 1;
+    nextPageBtn.disabled = currentPage >= totalPages;
+    lastPageBtn.disabled = currentPage >= totalPages;
+  }
+}
+
+// Initial navigation state
+updateNavButtons();
+
 // Override renderPage to include shapes and highlights
 async function renderPage() {
-  if (!pdfjsDoc) return;
+  if (!pdfjsDoc) {
+    return;
+  }
   const page = await pdfjsDoc.getPage(currentPage);
   const viewport = page.getViewport({ scale: zoomLevel });
   currentViewport = viewport;
@@ -202,6 +228,8 @@ async function renderPage() {
   renderShapes();
   renderHighlights();
   renderAnnotations();
+  // Update navigation controls
+  updateNavButtons();
 }
 
 // Render annotations for current page
@@ -243,8 +271,19 @@ function renderAnnotations() {
 fileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  const buffer = await file.arrayBuffer();
-  await loadArrayBuffer(buffer, file);
+  clearError();
+  if (file.type !== 'application/pdf') { showError('Unsupported file type.'); return; }
+  if (file.size > MAX_FILE_SIZE) { showError('File too large. Maximum size is 20 MB.'); return; }
+  showProgress();
+  try {
+    const buffer = await readFileAsArrayBufferWithProgress(file);
+    await loadArrayBuffer(buffer, file);
+    generateThumbnail();
+  } catch (err) {
+    showError('Error reading file.');
+  } finally {
+    hideProgress();
+  }
 });
 
 // Drag & drop handling
@@ -257,9 +296,19 @@ fileInput.addEventListener('change', async (e) => {
 
 dropZone.addEventListener('drop', async (e) => {
   const file = e.dataTransfer.files[0];
-  if (file && file.type==='application/pdf') {
-    const buffer = await file.arrayBuffer();
+  if (!file) return;
+  clearError();
+  if (file.type !== 'application/pdf') { showError('Unsupported file type.'); return; }
+  if (file.size > MAX_FILE_SIZE) { showError('File too large. Maximum size is 20 MB.'); return; }
+  showProgress();
+  try {
+    const buffer = await readFileAsArrayBufferWithProgress(file);
     await loadArrayBuffer(buffer, file);
+    generateThumbnail();
+  } catch (err) {
+    showError('Error reading file.');
+  } finally {
+    hideProgress();
   }
 });
 
@@ -268,7 +317,17 @@ firstPageBtn.addEventListener('click', async () => { currentPage=1; await render
 prevPageBtn.addEventListener('click', async () => { currentPage--; if(currentPage<1) currentPage=1; await renderPage(); });
 nextPageBtn.addEventListener('click', async () => { currentPage++; if(currentPage>totalPages) currentPage=totalPages; await renderPage(); });
 lastPageBtn.addEventListener('click', async () => { currentPage=totalPages; await renderPage(); });
-pageNumberInput.addEventListener('change', async () => { let v=parseInt(pageNumberInput.value)||1; currentPage=Math.min(Math.max(v,1),totalPages); await renderPage(); });
+pageNumberInput.addEventListener('change', async () => {
+  let v = parseInt(pageNumberInput.value) || 1;
+  currentPage = Math.min(Math.max(v, 1), totalPages);
+  await renderPage();
+});
+pageNumberInput.addEventListener('keydown', e => {
+  const val = parseFloat(pageNumberInput.value);
+  if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !Number.isInteger(val)) {
+    e.preventDefault();
+  }
+});
 
 // Zoom controls
 zoomSelect.addEventListener('change', async () => { zoomLevel=parseFloat(zoomSelect.value)||1; await renderPage(); });
@@ -576,4 +635,55 @@ overlayContainer.addEventListener('pointerup', (e) => {
   overlayContainer.removeChild(shapePreviewEl);
   shapePreviewEl = null;
   renderPage();
-}); 
+});
+
+function showError(msg) {
+  errorMessage.textContent = msg;
+}
+function clearError() {
+  errorMessage.textContent = '';
+}
+function showProgress() {
+  uploadProgress.hidden = false;
+  uploadProgress.removeAttribute('value');
+}
+function hideProgress() {
+  uploadProgress.hidden = true;
+  uploadProgress.value = 0;
+}
+
+// Read a File object as ArrayBuffer with progress reporting
+function readFileAsArrayBufferWithProgress(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        uploadProgress.value = percent;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// Generate a thumbnail of the first page and display it
+async function generateThumbnail() {
+  if (!pdfjsDoc) return;
+  thumbnailContainer.innerHTML = '';
+  const page = await pdfjsDoc.getPage(1);
+  // Determine scale based on container width
+  const origViewport = page.getViewport({ scale: 1 });
+  const containerWidth = thumbnailContainer.clientWidth || 40;
+  const scale = containerWidth / origViewport.width;
+  const thumbViewport = page.getViewport({ scale });
+  const canvasThumb = document.createElement('canvas');
+  const ctxThumb = canvasThumb.getContext('2d');
+  canvasThumb.width = thumbViewport.width;
+  canvasThumb.height = thumbViewport.height;
+  await page.render({ canvasContext: ctxThumb, viewport: thumbViewport }).promise;
+  const img = new Image();
+  img.src = canvasThumb.toDataURL();
+  thumbnailContainer.appendChild(img);
+} 

@@ -185,16 +185,70 @@
         max-height: 80vh;
       }
     }
+    /* Enhanced drop zone and thumbnails */
+    #dropZone {
+      border: 3px dashed #007bff;
+      padding: 2rem;
+      background: #e9f2ff;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    #dropZone:hover, #dropZone.dragover {
+      background: #d0e6ff;
+      border-color: #0056b3;
+    }
+    #dropZone .upload-icon {
+      font-size: 3rem;
+      color: #007bff;
+      margin-bottom: 0.5rem;
+    }
+    #dropZone .upload-text {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    #dropZone .upload-subtext {
+      font-size: 0.95rem;
+      color: #555;
+      margin-bottom: 0.5rem;
+    }
+    .upload-button {
+      font-size: 1.05rem;
+      padding: 0.5rem 1.2rem;
+      background: #007bff;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+      display: inline-block;
+    }
+    .upload-button:hover, .upload-button:focus {
+      background: #0056b3;
+    }
+    .file-list .file-item .thumbnail {
+      width: 50px;
+      height: 70px;
+      background: #e0e7ef;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-right: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .file-list .file-item .thumbnail img {
+      width: 100%;
+      height: auto;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Merge PDF Files</h2>
-    <div id="dropZone" tabindex="0" aria-label="Drag and drop PDFs here or click to browse" style="border:2px dashed #007bff;border-radius:8px;padding:1.5rem;text-align:center;cursor:pointer;background:#f1f3f6;margin-bottom:1rem;transition:background 0.2s;">
-      <span style="font-size:2rem;display:block;">📄</span>
-      <span style="font-size:1.1rem;">Drag & Drop PDFs Here</span><br>
-      <span style="font-size:0.95rem;color:#555;">or</span><br>
-      <label for="pdfs" id="fileInputLabel" style="font-size:1.05rem;margin-bottom:0.5rem;display:inline-block;background:#007bff;color:#fff;padding:0.5rem 1.2rem;border-radius:5px;cursor:pointer;">Browse</label>
+    <div id="dropZone" tabindex="0" aria-label="Drag and drop PDFs here or click to browse">
+      <span class="upload-icon">📄</span>
+      <div class="upload-text">Drag & Drop PDF Files Here</div>
+      <div class="upload-subtext">or</div>
+      <label for="pdfs" id="fileInputLabel" class="upload-button">Browse Files</label>
       <input type="file" id="pdfs" multiple accept="application/pdf" aria-labelledby="fileInputLabel" style="display:none;">
     </div>
     <ul class="file-list" id="fileList" aria-label="Selected PDF files"></ul>
@@ -227,30 +281,52 @@
     let filesArr = [];
     let isMerging = false;
 
-    // Drag-and-drop logic
+    // Enhanced drag-and-drop and file handling
+    // Utility to load thumbnails for each PDF
+    async function loadThumbnail(file, imgEl) {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const typedarray = new Uint8Array(reader.result);
+          const pdf = await window.pdfjsLib.getDocument({ data: typedarray }).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 0.3 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          imgEl.src = canvas.toDataURL();
+        } catch {
+          imgEl.alt = 'No preview';
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+    // Unified handler for dropped or selected files
+    function handleFiles(newFiles) {
+      const valid = newFiles.filter(f => f.type === 'application/pdf');
+      const invalid = newFiles.filter(f => f.type !== 'application/pdf');
+      if (invalid.length) {
+        statusDiv.textContent = `Skipped ${invalid.length} non-PDF file${invalid.length>1?'s':''}.`;
+        setTimeout(() => { statusDiv.textContent = ''; }, 4000);
+      }
+      filesArr = filesArr.concat(valid);
+      renderFileList();
+    }
+    // Bind drop and browse events
     dropZone.ondragover = (e) => {
       e.preventDefault();
-      dropZone.style.background = '#b6d4fe';
+      dropZone.classList.add('dragover');
     };
-    dropZone.ondragleave = (e) => {
-      e.preventDefault();
-      dropZone.style.background = '#f1f3f6';
-    };
+    dropZone.ondragleave = (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); };
     dropZone.ondrop = (e) => {
-      e.preventDefault();
-      dropZone.style.background = '#f1f3f6';
-      const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
-      if (files.length === 0) {
-        statusDiv.textContent = 'Please drop PDF files only.';
-        return;
-      }
-      filesArr = filesArr.concat(files);
-      renderFileList();
+      e.preventDefault(); dropZone.classList.remove('dragover');
+      handleFiles(Array.from(e.dataTransfer.files));
     };
     dropZone.onclick = () => input.click();
-    dropZone.onkeydown = (e) => {
-      if (e.key === 'Enter' || e.key === ' ') input.click();
-    };
+    dropZone.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') input.click(); };
+    input.onchange = (e) => handleFiles(Array.from(e.target.files));
 
     function formatFileSize(bytes) {
       if (bytes < 1024) return bytes + ' B';
@@ -265,6 +341,15 @@
         li.className = 'file-item';
         li.tabIndex = 0;
         li.setAttribute('aria-label', file.name);
+        // Thumbnail container
+        const thumbDiv = document.createElement('div');
+        thumbDiv.className = 'thumbnail';
+        const thumbImg = document.createElement('img');
+        thumbImg.alt = file.name;
+        thumbDiv.appendChild(thumbImg);
+        li.appendChild(thumbDiv);
+        // Generate thumbnail preview
+        loadThumbnail(file, thumbImg);
         const nameDiv = document.createElement('div');
         nameDiv.className = 'file-name';
         nameDiv.textContent = file.name + ' (' + formatFileSize(file.size) + ')';
@@ -325,11 +410,6 @@
         fileList.appendChild(li);
       });
     }
-
-    input.onchange = (e) => {
-      filesArr = filesArr.concat(Array.from(e.target.files));
-      renderFileList();
-    };
 
     // PDF.js preview logic
     async function previewPDF(file) {

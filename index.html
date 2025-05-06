@@ -14,8 +14,10 @@
     <h1>PDF Editor</h1>
     <div class="toolbar">
       <label id="dropZone" class="drop-zone">
-        Drag & drop PDF here or <input type="file" id="fileInput" accept="application/pdf" />
+        Drag & drop PDF here
+        <input type="file" id="fileInput" accept="application/pdf" />
       </label>
+      <button id="openFileBtn" class="toolbar-button">Open PDF</button>
       <span id="fileName">No file selected</span>
       <progress id="uploadProgress" value="0" max="100" hidden></progress>
       <div id="thumbnailContainer"></div>
@@ -34,6 +36,8 @@
           <option value="1" selected>100%</option>
           <option value="1.5">150%</option>
           <option value="2">200%</option>
+          <option value="fit-width">Fit to Width</option>
+          <option value="fit-page">Fit to Page</option>
         </select>
         <input type="range" id="zoomSlider" min="0.1" max="3" step="0.1" value="1" title="Zoom slider" />
         <button id="zoomInBtn">🔍+</button>
@@ -91,12 +95,14 @@
   <!-- Custom context menu for annotations/highlights -->
   <div id="contextMenu" class="context-menu" hidden>
     <ul>
+      <li data-action="convert">Convert to Text</li>
       <li data-action="delete">Delete</li>
       <li data-action="copy">Copy</li>
       <li data-action="bringFront">Bring to Front</li>
       <li data-action="sendBack">Send to Back</li>
     </ul>
   </div>
+  <div id="toast" class="toast"></div>
   <script src="script.js"></script>
 </body>
 </html>

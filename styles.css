@@ -378,4 +378,46 @@ footer {
 .context-menu li:hover {
   background: var(--primary-hover);
   color: #fff;
+}
+
+/* Primary button style for Save PDF */
+.primary-button {
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  font-weight: bold;
+}
+.primary-button:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Toolbar button style (Open PDF) */
+.toolbar-button {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--button-radius);
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+.toolbar-button:hover {
+  border-color: var(--primary-hover);
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--primary-color);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: var(--button-radius);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 3000;
+}
+.toast.show {
+  opacity: 1;
 } 

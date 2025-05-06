@@ -43,6 +43,7 @@ const fontMap = {
 
 // DOM elements
 const fileInput = document.getElementById('fileInput');
+const openFileBtn = document.getElementById('openFileBtn');
 const dropZone = document.getElementById('dropZone');
 const fileNameEl = document.getElementById('fileName');
 const canvas = document.getElementById('pdfCanvas');
@@ -85,11 +86,13 @@ const modeToggleBtn = document.getElementById('modeToggleBtn');
 const controlsPanel = document.querySelector('.controls');
 const boldBtn = document.getElementById('boldBtn');
 const italicBtn = document.getElementById('italicBtn');
+const toastEl = document.getElementById('toast');
 
 let editMode = true;
 let textToolActive = false;
 let boldActive = false;
 let italicActive = false;
+let saveHandle = null;
 
 // Update undo/redo button states
 function updateUndoRedoButtons() {
@@ -190,46 +193,11 @@ function renderHighlights() {
     el.className = 'highlight';
     el.dataset.id = h.id;
     el.dataset.comment = h.comment;
-    el.addEventListener('contextmenu', onContextMenu);
     el.addEventListener('dblclick', async () => {
-      // Remove this highlight on double-click
       highlights = highlights.filter(h2 => h2.id !== h.id);
       await pushHistory();
       await renderPage();
     });
-    // Remove highlight and add text if user has entered text
-    el.addEventListener('click', async (e) => {
-      // Prevent bubbling to canvas and default
-      e.preventDefault();
-      e.stopPropagation();
-      if (!pdfDoc) return;
-      const text = textInput.value.trim();
-      if (!text) return;
-      // Remove this highlight
-      highlights = highlights.filter(h2 => h2.id !== h.id);
-      // Create text annotation at highlight position
-      const anno = {
-        id: Date.now() + '_' + Math.random(),
-        page: currentPage,
-        text,
-        fontName: fontSelect.value,
-        size: parseFloat(sizeInput.value),
-        color: colorInput.value,
-        align: alignSelect.value,
-        x: h.xMin,
-        y: h.yMin,
-      };
-      annotations.push(anno);
-      await pushHistory();
-      selectedAnno = anno;
-      xCoordInput.value = anno.x.toFixed(1);
-      yCoordInput.value = anno.y.toFixed(1);
-      await renderPage();
-      // Clear and refocus text input for next entry
-      textInput.value = '';
-      textInput.focus();
-    });
-    // Position and size in CSS pixels
     const [x1Px, y1Px] = currentViewport.convertToViewportPoint(h.xMin, h.yMin);
     const [x2Px, y2Px] = currentViewport.convertToViewportPoint(h.xMax, h.yMax);
     const left = Math.min(x1Px, x2Px);
@@ -335,7 +303,6 @@ function renderAnnotations() {
       el.style.top = `${yPx - elHeight}px`;
       // Drag events
       el.addEventListener('mousedown', annotationMouseDown);
-      el.addEventListener('contextmenu', onContextMenu);
     });
 }
 
@@ -402,7 +369,24 @@ pageNumberInput.addEventListener('keydown', e => {
 });
 
 // Zoom controls
-zoomSelect.addEventListener('change', async () => { zoomLevel=parseFloat(zoomSelect.value)||1; await renderPage(); });
+zoomSelect.addEventListener('change', async () => {
+  const val = zoomSelect.value;
+  if (val === 'fit-width' || val === 'fit-page') {
+    const page = await pdfjsDoc.getPage(currentPage);
+    const origViewport = page.getViewport({ scale: 1 });
+    const container = document.querySelector('.viewer-container');
+    if (val === 'fit-width') {
+      zoomLevel = container.clientWidth / origViewport.width;
+    } else {
+      zoomLevel = container.clientHeight / origViewport.height;
+    }
+  } else {
+    zoomLevel = parseFloat(val) || 1;
+  }
+  zoomSlider.value = zoomLevel;
+  zoomSelect.value = val;
+  await renderPage();
+});
 zoomInBtn.addEventListener('click', async () => { zoomLevel*=1.25; zoomSelect.value=zoomLevel; await renderPage(); });
 zoomOutBtn.addEventListener('click', async () => { zoomLevel/=1.25; zoomSelect.value=zoomLevel; await renderPage(); });
 
@@ -517,7 +501,8 @@ redoBtn.addEventListener('click', async () => {
 
 // Save PDF including shapes, highlights, and text annotations
 downloadBtn.addEventListener('click', async () => {
-  if (!pdfBytes) return alert('Load a PDF first.');
+  if (!pdfBytes) { return alert('Load a PDF first.'); }
+  // Prepare PDF bytes
   const saveDoc = await PDFDocument.load(pdfBytes);
   const pages = saveDoc.getPages();
 
@@ -583,14 +568,35 @@ downloadBtn.addEventListener('click', async () => {
     page.drawText(a.text, { x: a.x, y: a.y, size: a.size, font, color: rgb(rT, gT, bT) });
   }
 
-  // Save and download the edited PDF
-  const bytes = await saveDoc.save();
-  const blob = new Blob([bytes], { type: 'application/pdf' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'edited.pdf';
-  link.click();
-  URL.revokeObjectURL(link.href);
+  // Use File System Access API if available
+  try {
+    let handle = saveHandle;
+    if (!handle && window.showSaveFilePicker) {
+      handle = await window.showSaveFilePicker({
+        types: [{ description: 'PDF Files', accept: { 'application/pdf': ['.pdf'] } }]
+      });
+      saveHandle = handle;
+    }
+    if (handle) {
+      const writable = await handle.createWritable();
+      const bytes = await saveDoc.save();
+      await writable.write(bytes);
+      await writable.close();
+    } else {
+      // fallback download
+      const bytes = await saveDoc.save();
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'edited.pdf';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+    showToast('PDF saved');
+  } catch (err) {
+    console.error(err);
+    alert('Save failed: ' + err.message);
+  }
 });
 
 // Keyboard shortcuts
@@ -863,6 +869,32 @@ contextMenu.querySelectorAll('li').forEach(li => {
         await pushHistory();
         await renderPage();
       }
+    } else if (action === 'convert' && contextTarget && contextTarget.classList.contains('highlight')) {
+      // Remove highlight
+      const hid = contextTarget.dataset.id;
+      const h = highlights.find(h => h.id === hid);
+      if (h) {
+        highlights = highlights.filter(h2 => h2.id !== hid);
+        // Enter edit mode and text tool
+        if (!editMode) modeToggleBtn.click();
+        if (!textToolActive) textToolBtn.click();
+        // Create text annotation
+        const anno = {
+          id: Date.now() + '_' + Math.random(), page: currentPage,
+          text: h.comment || '', fontName: fontSelect.value,
+          size: parseFloat(sizeInput.value), color: colorInput.value,
+          align: alignSelect.value, bold: boldActive, italic: italicActive,
+          x: h.xMin, y: h.yMin
+        };
+        annotations.push(anno);
+        await pushHistory();
+        selectedAnno = anno;
+        xCoordInput.value = anno.x.toFixed(1);
+        yCoordInput.value = anno.y.toFixed(1);
+        await renderPage();
+        textInput.value = anno.text;
+        textInput.focus();
+      }
     }
     contextMenu.hidden = true;
   });
@@ -901,8 +933,26 @@ zoomSlider.addEventListener('input', async () => {
   zoomSelect.value = zoomLevel;
   await renderPage();
 });
-zoomSelect.addEventListener('change', async () => {
-  zoomLevel = parseFloat(zoomSelect.value) || 1;
-  zoomSlider.value = zoomLevel;
-  await renderPage();
-}); 
+
+// Add global contextmenu handler
+document.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  contextMenu.hidden = true;
+  const target = e.target;
+  if (target.classList.contains('annotation') || target.classList.contains('highlight')) {
+    contextTarget = target;
+    contextMenu.style.left = e.pageX + 'px';
+    contextMenu.style.top = e.pageY + 'px';
+    contextMenu.hidden = false;
+  }
+});
+
+// Open PDF via button
+openFileBtn.addEventListener('click', () => fileInput.click());
+
+// Helper: show toast notifications
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(() => toastEl.classList.remove('show'), 2000);
+} 

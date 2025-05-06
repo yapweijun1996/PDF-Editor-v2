@@ -79,6 +79,17 @@ const errorMessage = document.getElementById('errorMessage');
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const pageLoader = document.getElementById('pageLoader');
 const sizeSlider = document.getElementById('sizeSlider');
+const zoomSlider = document.getElementById('zoomSlider');
+const textToolBtn = document.getElementById('textToolBtn');
+const modeToggleBtn = document.getElementById('modeToggleBtn');
+const controlsPanel = document.querySelector('.controls');
+const boldBtn = document.getElementById('boldBtn');
+const italicBtn = document.getElementById('italicBtn');
+
+let editMode = true;
+let textToolActive = false;
+let boldActive = false;
+let italicActive = false;
 
 // Update undo/redo button states
 function updateUndoRedoButtons() {
@@ -294,10 +305,11 @@ function renderAnnotations() {
       el.innerText = a.text;
       // Positioning and styling
       el.style.position = 'absolute';
+      // Text styling
       el.style.fontFamily = fontMap[a.fontName] || fontMap.Helvetica;
-      const fontPx = a.size * zoomLevel;
-      el.style.fontSize = `${fontPx}px`;
-      el.style.lineHeight = `${fontPx}px`;
+      el.style.fontSize = `${a.size * zoomLevel}px`;
+      el.style.fontWeight = a.bold ? 'bold' : 'normal';
+      el.style.fontStyle = a.italic ? 'italic' : 'normal';
       el.style.color = a.color;
       el.style.cursor = 'move';
       el.style.pointerEvents = 'auto';
@@ -409,7 +421,8 @@ async function rotatePage(angle) {
 
 // Click-to-place text
 canvas.addEventListener('click', async (e) => {
-  if (e.button !== 0) return; // only left click
+  // Only handle left-click when text tool is active and in edit mode
+  if (e.button !== 0 || !textToolActive || !editMode) return;
   if (!pdfDoc) return alert('Load a PDF first.');
   const text = textInput.value.trim();
   if (!text) return alert('Enter text to add.');
@@ -419,9 +432,13 @@ canvas.addEventListener('click', async (e) => {
   const yPx = e.clientY - rect.top;
   const [x, y] = currentViewport.convertToPdfPoint(xPx, yPx);
   // Create annotation
-  const anno = { id: Date.now() + '_' + Math.random(), page: currentPage,
+  const anno = {
+    id: Date.now() + '_' + Math.random(), page: currentPage,
     text, fontName: fontSelect.value, size: parseFloat(sizeInput.value),
-    color: colorInput.value, align: alignSelect.value, x, y };
+    color: colorInput.value, align: alignSelect.value,
+    bold: boldActive, italic: italicActive,
+    x, y
+  };
   annotations.push(anno);
   await pushHistory();
   selectedAnno = anno;
@@ -853,4 +870,39 @@ contextMenu.querySelectorAll('li').forEach(li => {
 
 // Sync size slider and number input
 sizeSlider.addEventListener('input', () => { sizeInput.value = sizeSlider.value; });
-sizeInput.addEventListener('change', () => { sizeSlider.value = sizeInput.value; }); 
+sizeInput.addEventListener('change', () => { sizeSlider.value = sizeInput.value; });
+
+// Toggle edit/view mode
+modeToggleBtn.addEventListener('click', () => {
+  editMode = !editMode;
+  document.body.classList.toggle('view-mode', !editMode);
+  modeToggleBtn.classList.toggle('active', editMode);
+  // Disable tools when in view mode
+  [rectBtn, ellipseBtn, highlightBtn, textToolBtn].forEach(btn => btn.disabled = !editMode);
+  controlsPanel.hidden = !editMode || !textToolActive;
+});
+
+// Toggle text-tool visiblity
+textToolBtn.addEventListener('click', () => {
+  textToolActive = !textToolActive;
+  controlsPanel.hidden = !textToolActive;
+  textToolBtn.classList.toggle('active', textToolActive);
+  // Ensure edit mode is on
+  if (textToolActive && !editMode) modeToggleBtn.click();
+});
+
+// Bold/italic styling toggles
+boldBtn.addEventListener('click', () => { boldActive = !boldActive; boldBtn.classList.toggle('active', boldActive); });
+italicBtn.addEventListener('click', () => { italicActive = !italicActive; italicBtn.classList.toggle('active', italicActive); });
+
+// Zoom slider binding
+zoomSlider.addEventListener('input', async () => {
+  zoomLevel = parseFloat(zoomSlider.value) || 1;
+  zoomSelect.value = zoomLevel;
+  await renderPage();
+});
+zoomSelect.addEventListener('change', async () => {
+  zoomLevel = parseFloat(zoomSelect.value) || 1;
+  zoomSlider.value = zoomLevel;
+  await renderPage();
+}); 

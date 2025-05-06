@@ -78,6 +78,7 @@ const thumbnailContainer = document.getElementById('thumbnailContainer');
 const errorMessage = document.getElementById('errorMessage');
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const pageLoader = document.getElementById('pageLoader');
+const sizeSlider = document.getElementById('sizeSlider');
 
 // Update undo/redo button states
 function updateUndoRedoButtons() {
@@ -176,7 +177,41 @@ function renderHighlights() {
   highlights.filter(h => h.page === currentPage).forEach(h => {
     const el = document.createElement('div');
     el.className = 'highlight';
+    el.dataset.id = h.id;
     el.dataset.comment = h.comment;
+    el.addEventListener('contextmenu', onContextMenu);
+    el.addEventListener('dblclick', async () => {
+      // Remove this highlight on double-click
+      highlights = highlights.filter(h2 => h2.id !== h.id);
+      await pushHistory();
+      await renderPage();
+    });
+    // Remove highlight and add text if user has entered text
+    el.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const text = textInput.value.trim();
+      if (!text || !pdfDoc) return;
+      // Remove this highlight
+      highlights = highlights.filter(h2 => h2.id !== h.id);
+      // Create text annotation at highlight position
+      const anno = {
+        id: Date.now() + '_' + Math.random(),
+        page: currentPage,
+        text,
+        fontName: fontSelect.value,
+        size: parseFloat(sizeInput.value),
+        color: colorInput.value,
+        align: alignSelect.value,
+        x: h.xMin,
+        y: h.yMin,
+      };
+      annotations.push(anno);
+      selectedAnno = anno;
+      xCoordInput.value = anno.x.toFixed(1);
+      yCoordInput.value = anno.y.toFixed(1);
+      await pushHistory();
+      await renderPage();
+    });
     // Position and size in CSS pixels
     const [x1Px, y1Px] = currentViewport.convertToViewportPoint(h.xMin, h.yMin);
     const [x2Px, y2Px] = currentViewport.convertToViewportPoint(h.xMax, h.yMax);
@@ -282,6 +317,7 @@ function renderAnnotations() {
       el.style.top = `${yPx - elHeight}px`;
       // Drag events
       el.addEventListener('mousedown', annotationMouseDown);
+      el.addEventListener('contextmenu', onContextMenu);
     });
 }
 
@@ -643,7 +679,10 @@ overlayContainer.addEventListener('pointerup', (e) => {
   const [xMax, yMax] = currentViewport.convertToPdfPoint(x2Px, y2Px);
   if (drawMode === 'highlight') {
     const comment = prompt('Enter highlight comment:');
-    if (comment) highlights.push({ page: currentPage, xMin, yMin, xMax, yMax, comment });
+    if (comment) {
+      const hl = { id: Date.now() + '_' + Math.random(), page: currentPage, xMin, yMin, xMax, yMax, comment };
+      highlights.push(hl);
+    }
   } else {
     shapes.push({ page: currentPage, xMin, yMin, xMax, yMax,
       color: shapeColorInput.value,
@@ -738,4 +777,77 @@ function updateSidebarSelection() {
   thumbs.forEach((thumb, idx) => {
     thumb.classList.toggle('selected', idx + 1 === currentPage);
   });
-} 
+}
+
+// Context menu handling
+const contextMenu = document.getElementById('contextMenu');
+let contextTarget = null;
+
+function onContextMenu(e) {
+  e.preventDefault();
+  contextTarget = e.currentTarget;
+  contextMenu.style.left = e.pageX + 'px';
+  contextMenu.style.top = e.pageY + 'px';
+  contextMenu.hidden = false;
+}
+
+document.addEventListener('click', e => {
+  if (contextMenu && !contextMenu.contains(e.target)) {
+    contextMenu.hidden = true;
+  }
+});
+
+// Menu actions
+contextMenu.querySelectorAll('li').forEach(li => {
+  li.addEventListener('click', async () => {
+    const action = li.dataset.action;
+    if (action === 'delete' && contextTarget) {
+      if (contextTarget.classList.contains('annotation')) {
+        annotations = annotations.filter(a => a.id !== contextTarget.dataset.id);
+        selectedAnno = null;
+        await pushHistory();
+        await renderPage();
+      } else if (contextTarget.classList.contains('highlight')) {
+        highlights = highlights.filter(h => h.id !== contextTarget.dataset.id);
+        await pushHistory();
+        await renderPage();
+      }
+    } else if (action === 'copy' && contextTarget) {
+      if (contextTarget.classList.contains('annotation')) {
+        const a = annotations.find(a => a.id === contextTarget.dataset.id);
+        if (a) {
+          const clone = { ...a, id: Date.now() + '_' + Math.random(), x: a.x + 10, y: a.y - 10 };
+          annotations.push(clone);
+          selectedAnno = clone;
+          await pushHistory();
+          await renderPage();
+        }
+      } else if (contextTarget.classList.contains('highlight')) {
+        const h = highlights.find(h => h.id === contextTarget.dataset.id);
+        if (h) {
+          const clone = { ...h, id: Date.now() + '_' + Math.random(), xMin: h.xMin + 10, yMin: h.yMin - 10, xMax: h.xMax + 10, yMax: h.yMax - 10 };
+          highlights.push(clone);
+          await pushHistory();
+          await renderPage();
+        }
+      }
+    } else if ((action === 'bringFront' || action === 'sendBack') && contextTarget) {
+      const isAnno = contextTarget.classList.contains('annotation');
+      const list = isAnno ? annotations : highlights;
+      const id = contextTarget.dataset.id;
+      const idx = list.findIndex(item => item.id === id);
+      if (idx >= 0) {
+        const [item] = list.splice(idx, 1);
+        if (action === 'bringFront') list.push(item);
+        else list.unshift(item);
+        await pushHistory();
+        await renderPage();
+      }
+    }
+    contextMenu.hidden = true;
+  });
+});
+
+// Sync size slider and number input
+sizeSlider.addEventListener('input', () => { sizeInput.value = sizeSlider.value; });
+sizeInput.addEventListener('change', () => { sizeSlider.value = sizeInput.value; }); 

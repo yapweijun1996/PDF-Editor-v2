@@ -72,6 +72,7 @@
         <option value="Courier">Courier</option>
       </select>
       <input type="number" id="sizeInput" placeholder="Font size (pts)" value="24" />
+      <input type="range" id="sizeSlider" min="8" max="72" value="24" step="1" title="Font size slider" />
       <input type="color" id="colorInput" value="#000000" />
       <select id="alignSelect">
         <option value="left">Left</option>
@@ -85,6 +86,15 @@
       <button type="button" id="nudgeUpBtn" title="Nudge Up">⬆️</button>
       <button type="button" id="nudgeDownBtn" title="Nudge Down">⬇️</button>
     </div>
+  </div>
+  <!-- Custom context menu for annotations/highlights -->
+  <div id="contextMenu" class="context-menu" hidden>
+    <ul>
+      <li data-action="delete">Delete</li>
+      <li data-action="copy">Copy</li>
+      <li data-action="bringFront">Bring to Front</li>
+      <li data-action="sendBack">Send to Back</li>
+    </ul>
   </div>
   <script src="script.js"></script>
 </body>

@@ -188,9 +188,12 @@ function renderHighlights() {
     });
     // Remove highlight and add text if user has entered text
     el.addEventListener('click', async (e) => {
+      // Prevent bubbling to canvas and default
+      e.preventDefault();
       e.stopPropagation();
+      if (!pdfDoc) return;
       const text = textInput.value.trim();
-      if (!text || !pdfDoc) return;
+      if (!text) return;
       // Remove this highlight
       highlights = highlights.filter(h2 => h2.id !== h.id);
       // Create text annotation at highlight position
@@ -206,11 +209,14 @@ function renderHighlights() {
         y: h.yMin,
       };
       annotations.push(anno);
+      await pushHistory();
       selectedAnno = anno;
       xCoordInput.value = anno.x.toFixed(1);
       yCoordInput.value = anno.y.toFixed(1);
-      await pushHistory();
       await renderPage();
+      // Clear and refocus text input for next entry
+      textInput.value = '';
+      textInput.focus();
     });
     // Position and size in CSS pixels
     const [x1Px, y1Px] = currentViewport.convertToViewportPoint(h.xMin, h.yMin);
@@ -403,6 +409,7 @@ async function rotatePage(angle) {
 
 // Click-to-place text
 canvas.addEventListener('click', async (e) => {
+  if (e.button !== 0) return; // only left click
   if (!pdfDoc) return alert('Load a PDF first.');
   const text = textInput.value.trim();
   if (!text) return alert('Enter text to add.');
@@ -412,23 +419,18 @@ canvas.addEventListener('click', async (e) => {
   const yPx = e.clientY - rect.top;
   const [x, y] = currentViewport.convertToPdfPoint(xPx, yPx);
   // Create annotation
-  const anno = {
-    id: Date.now() + '_' + Math.random(),
-    page: currentPage,
-    text,
-    fontName: fontSelect.value,
-    size: parseFloat(sizeInput.value),
-    color: colorInput.value,
-    align: alignSelect.value,
-    x,
-    y,
-  };
+  const anno = { id: Date.now() + '_' + Math.random(), page: currentPage,
+    text, fontName: fontSelect.value, size: parseFloat(sizeInput.value),
+    color: colorInput.value, align: alignSelect.value, x, y };
   annotations.push(anno);
-  // Auto-select new annotation
+  await pushHistory();
   selectedAnno = anno;
   xCoordInput.value = anno.x.toFixed(1);
   yCoordInput.value = anno.y.toFixed(1);
   renderAnnotations();
+  // Clear input for next text
+  textInput.value = '';
+  sizeSlider.value = sizeInput.value;
 });
 
 // Drag handlers
@@ -785,6 +787,7 @@ let contextTarget = null;
 
 function onContextMenu(e) {
   e.preventDefault();
+  e.stopPropagation();
   contextTarget = e.currentTarget;
   contextMenu.style.left = e.pageX + 'px';
   contextMenu.style.top = e.pageY + 'px';

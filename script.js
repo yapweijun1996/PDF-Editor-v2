@@ -70,10 +70,6 @@ const colorInput = document.getElementById('colorInput');
 const alignSelect = document.getElementById('alignSelect');
 const xCoordInput = document.getElementById('xCoordInput');
 const yCoordInput = document.getElementById('yCoordInput');
-const nudgeLeftBtn = document.getElementById('nudgeLeftBtn');
-const nudgeRightBtn = document.getElementById('nudgeRightBtn');
-const nudgeUpBtn = document.getElementById('nudgeUpBtn');
-const nudgeDownBtn = document.getElementById('nudgeDownBtn');
 const uploadProgress = document.getElementById('uploadProgress');
 const thumbnailContainer = document.getElementById('thumbnailContainer');
 const errorMessage = document.getElementById('errorMessage');
@@ -135,6 +131,7 @@ async function loadArrayBuffer(buffer, file) {
 
   // Render
   await renderPage();
+  showToast(`Loaded: ${file.name}`);
   // Populate sidebar thumbnails
   await generateSidebarThumbnails();
 }
@@ -624,37 +621,6 @@ yCoordInput.addEventListener('change', () => {
   }
 });
 
-// Nudge handlers (0.1 point per click)
-const nudgeStep = 0.1;
-
-/**
- * Move the selected annotation by (dx, dy) points
- */
-async function nudge(dx, dy) {
-  console.log('Nudge action:', dx, dy, 'Current annotation:', selectedAnno);
-  // Ensure there's an annotation to move
-  if (!annotations.length) return;
-  // Select last annotation if none currently selected
-  if (!selectedAnno) {
-    selectedAnno = annotations[annotations.length - 1];
-  }
-  // Update coords
-  selectedAnno.x += dx;
-  selectedAnno.y += dy;
-  // Reflect in UI
-  xCoordInput.value = selectedAnno.x.toFixed(1);
-  yCoordInput.value = selectedAnno.y.toFixed(1);
-  renderAnnotations();
-  // Record change for undo
-  await pushHistory();
-}
-
-// Attach nudge buttons
-nudgeLeftBtn.addEventListener('click', () => nudge(-nudgeStep, 0));
-nudgeRightBtn.addEventListener('click', () => nudge(nudgeStep, 0));
-nudgeUpBtn.addEventListener('click', () => nudge(0, nudgeStep));
-nudgeDownBtn.addEventListener('click', () => nudge(0, -nudgeStep));
-
 // Simplified drawing handlers for shapes and highlights
 overlayContainer.addEventListener('pointerdown', (e) => {
   if (!drawMode || e.target !== overlayContainer) return;
@@ -804,22 +770,21 @@ function updateSidebarSelection() {
   });
 }
 
-// Context menu handling
-const contextMenu = document.getElementById('contextMenu');
-let contextTarget = null;
-
-function onContextMenu(e) {
+// Context-menu only on annotation/highlight elements
+overlayContainer.addEventListener('contextmenu', e => {
   e.preventDefault();
-  e.stopPropagation();
-  contextTarget = e.currentTarget;
-  contextMenu.style.left = e.pageX + 'px';
-  contextMenu.style.top = e.pageY + 'px';
-  contextMenu.hidden = false;
-}
-
-document.addEventListener('click', e => {
-  if (contextMenu && !contextMenu.contains(e.target)) {
-    contextMenu.hidden = true;
+  contextMenu.hidden = true;
+  let target = e.target;
+  // If clicking inside an annotation/highlight child, climb until the element
+  while (target && !target.classList.contains('annotation') && !target.classList.contains('highlight')) {
+    if (target === overlayContainer) return;
+    target = target.parentElement;
+  }
+  if (target && (target.classList.contains('annotation') || target.classList.contains('highlight'))) {
+    contextTarget = target;
+    contextMenu.style.left = e.pageX + 'px';
+    contextMenu.style.top = e.pageY + 'px';
+    contextMenu.hidden = false;
   }
 });
 
@@ -856,47 +821,47 @@ contextMenu.querySelectorAll('li').forEach(li => {
           await pushHistory();
           await renderPage();
         }
+      } else if ((action === 'bringFront' || action === 'sendBack') && contextTarget) {
+        const isAnno = contextTarget.classList.contains('annotation');
+        const list = isAnno ? annotations : highlights;
+        const id = contextTarget.dataset.id;
+        const idx = list.findIndex(item => item.id === id);
+        if (idx >= 0) {
+          const [item] = list.splice(idx, 1);
+          if (action === 'bringFront') list.push(item);
+          else list.unshift(item);
+          await pushHistory();
+          await renderPage();
+        }
+      } else if (action === 'convert' && contextTarget && contextTarget.classList.contains('highlight')) {
+        // Remove highlight
+        const hid = contextTarget.dataset.id;
+        const h = highlights.find(h => h.id === hid);
+        if (h) {
+          highlights = highlights.filter(h2 => h2.id !== hid);
+          // Enter edit mode and text tool
+          if (!editMode) modeToggleBtn.click();
+          if (!textToolActive) textToolBtn.click();
+          // Create text annotation
+          const anno = {
+            id: Date.now() + '_' + Math.random(), page: currentPage,
+            text: h.comment || '', fontName: fontSelect.value,
+            size: parseFloat(sizeInput.value), color: colorInput.value,
+            align: alignSelect.value, bold: boldActive, italic: italicActive,
+            x: h.xMin, y: h.yMin
+          };
+          annotations.push(anno);
+          await pushHistory();
+          selectedAnno = anno;
+          xCoordInput.value = anno.x.toFixed(1);
+          yCoordInput.value = anno.y.toFixed(1);
+          await renderPage();
+          textInput.value = anno.text;
+          textInput.focus();
+        }
       }
-    } else if ((action === 'bringFront' || action === 'sendBack') && contextTarget) {
-      const isAnno = contextTarget.classList.contains('annotation');
-      const list = isAnno ? annotations : highlights;
-      const id = contextTarget.dataset.id;
-      const idx = list.findIndex(item => item.id === id);
-      if (idx >= 0) {
-        const [item] = list.splice(idx, 1);
-        if (action === 'bringFront') list.push(item);
-        else list.unshift(item);
-        await pushHistory();
-        await renderPage();
-      }
-    } else if (action === 'convert' && contextTarget && contextTarget.classList.contains('highlight')) {
-      // Remove highlight
-      const hid = contextTarget.dataset.id;
-      const h = highlights.find(h => h.id === hid);
-      if (h) {
-        highlights = highlights.filter(h2 => h2.id !== hid);
-        // Enter edit mode and text tool
-        if (!editMode) modeToggleBtn.click();
-        if (!textToolActive) textToolBtn.click();
-        // Create text annotation
-        const anno = {
-          id: Date.now() + '_' + Math.random(), page: currentPage,
-          text: h.comment || '', fontName: fontSelect.value,
-          size: parseFloat(sizeInput.value), color: colorInput.value,
-          align: alignSelect.value, bold: boldActive, italic: italicActive,
-          x: h.xMin, y: h.yMin
-        };
-        annotations.push(anno);
-        await pushHistory();
-        selectedAnno = anno;
-        xCoordInput.value = anno.x.toFixed(1);
-        yCoordInput.value = anno.y.toFixed(1);
-        await renderPage();
-        textInput.value = anno.text;
-        textInput.focus();
-      }
-    }
-    contextMenu.hidden = true;
+      contextMenu.hidden = true;
+    });
   });
 });
 
@@ -932,19 +897,6 @@ zoomSlider.addEventListener('input', async () => {
   zoomLevel = parseFloat(zoomSlider.value) || 1;
   zoomSelect.value = zoomLevel;
   await renderPage();
-});
-
-// Add global contextmenu handler
-document.addEventListener('contextmenu', e => {
-  e.preventDefault();
-  contextMenu.hidden = true;
-  const target = e.target;
-  if (target.classList.contains('annotation') || target.classList.contains('highlight')) {
-    contextTarget = target;
-    contextMenu.style.left = e.pageX + 'px';
-    contextMenu.style.top = e.pageY + 'px';
-    contextMenu.hidden = false;
-  }
 });
 
 // Open PDF via button

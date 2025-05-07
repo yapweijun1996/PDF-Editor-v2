@@ -821,47 +821,44 @@ contextMenu.querySelectorAll('li').forEach(li => {
           await pushHistory();
           await renderPage();
         }
-      } else if ((action === 'bringFront' || action === 'sendBack') && contextTarget) {
-        const isAnno = contextTarget.classList.contains('annotation');
-        const list = isAnno ? annotations : highlights;
-        const id = contextTarget.dataset.id;
-        const idx = list.findIndex(item => item.id === id);
-        if (idx >= 0) {
-          const [item] = list.splice(idx, 1);
-          if (action === 'bringFront') list.push(item);
-          else list.unshift(item);
-          await pushHistory();
-          await renderPage();
-        }
-      } else if (action === 'convert' && contextTarget && contextTarget.classList.contains('highlight')) {
-        // Remove highlight
-        const hid = contextTarget.dataset.id;
-        const h = highlights.find(h => h.id === hid);
-        if (h) {
-          highlights = highlights.filter(h2 => h2.id !== hid);
-          // Enter edit mode and text tool
-          if (!editMode) modeToggleBtn.click();
-          if (!textToolActive) textToolBtn.click();
-          // Create text annotation
-          const anno = {
-            id: Date.now() + '_' + Math.random(), page: currentPage,
-            text: h.comment || '', fontName: fontSelect.value,
-            size: parseFloat(sizeInput.value), color: colorInput.value,
-            align: alignSelect.value, bold: boldActive, italic: italicActive,
-            x: h.xMin, y: h.yMin
-          };
-          annotations.push(anno);
-          await pushHistory();
-          selectedAnno = anno;
-          xCoordInput.value = anno.x.toFixed(1);
-          yCoordInput.value = anno.y.toFixed(1);
-          await renderPage();
-          textInput.value = anno.text;
-          textInput.focus();
-        }
       }
-      contextMenu.hidden = true;
-    });
+    } else if ((action === 'bringFront' || action === 'sendBack') && contextTarget) {
+      const isAnno = contextTarget.classList.contains('annotation');
+      const list = isAnno ? annotations : highlights;
+      const id = contextTarget.dataset.id;
+      const idx = list.findIndex(item => item.id === id);
+      if (idx >= 0) {
+        const [item] = list.splice(idx, 1);
+        if (action === 'bringFront') list.push(item);
+        else list.unshift(item);
+        await pushHistory();
+        await renderPage();
+      }
+    } else if (action === 'convert' && contextTarget && contextTarget.classList.contains('highlight')) {
+      const hid = contextTarget.dataset.id;
+      const h = highlights.find(h2 => h2.id === hid);
+      if (h) {
+        highlights = highlights.filter(h2 => h2.id !== hid);
+        if (!editMode) modeToggleBtn.click();
+        if (!textToolActive) textToolBtn.click();
+        const anno = {
+          id: Date.now() + '_' + Math.random(), page: currentPage,
+          text: h.comment || '', fontName: fontSelect.value,
+          size: parseFloat(sizeInput.value), color: colorInput.value,
+          align: alignSelect.value, bold: boldActive, italic: italicActive,
+          x: h.xMin, y: h.yMin
+        };
+        annotations.push(anno);
+        await pushHistory();
+        selectedAnno = anno;
+        xCoordInput.value = anno.x.toFixed(1);
+        yCoordInput.value = anno.y.toFixed(1);
+        await renderPage();
+        textInput.value = anno.text;
+        textInput.focus();
+      }
+    }
+    contextMenu.hidden = true;
   });
 });
 

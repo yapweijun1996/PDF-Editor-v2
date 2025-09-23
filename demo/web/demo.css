@@ -144,6 +144,29 @@
   opacity: var(--button-disabled-opacity);
 }
 
+/* Stamp drag-and-drop overlay */
+#stampDropOverlay {
+  position: absolute;
+  z-index: 20000;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed rgba(128,128,128,.6);
+  background: rgba(0,0,0,.05);
+  pointer-events: none;
+}
+#stampDropOverlay.visible { display: flex; }
+#stampDropOverlay::before {
+  content: attr(data-label);
+  content: "Drop image to add stamp"; /* fallback */
+  color: var(--main-color);
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(0,0,0,.08);
+}
+
 /* Small screens: let dialog breathe */
 @media (max-width: 540px) {
   #commentManagerDialog.dialog.commentManager {

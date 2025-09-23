@@ -252,6 +252,10 @@ demo-scroll-mode-group =
     .aria-label = Scroll mode
 demo-spread-mode-group =
     .aria-label = Page spread
+
+## Demo-only improvements
+
+demo-stamp-drop-hint = Drag & drop an image onto the page to add a stamp
 pdfjs-find-match-count =
     { $total ->
         [one] { $current } of { $total } match

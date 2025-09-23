@@ -201,6 +201,62 @@
           autoEnterEdit('editorInkButton', 15);       // INK
           autoEnterEdit('editorStampButton', 13);     // STAMP
           autoEnterEdit('editorSignatureButton', 101);// SIGNATURE
+
+          // Stamp: drag & drop support and focus on primary action
+          (async () => {
+            const { AnnotationEditorType, AnnotationEditorParamsType } = await import('pdfjs-lib');
+            const viewerContainer = document.getElementById('viewerContainer');
+            const overlay = document.createElement('div');
+            overlay.id = 'stampDropOverlay';
+            overlay.setAttribute('aria-hidden', 'true');
+            overlay.textContent = '';
+            viewerContainer.appendChild(overlay);
+            // Localize overlay label when l10n is ready
+            window.PDFViewerApplication?.l10n?.get('demo-stamp-drop-hint').then(t => {
+              if (t && typeof t === 'string') overlay.setAttribute('data-label', t);
+            }).catch(() => {});
+
+            let inStamp = false;
+            const setStampMode = isStamp => {
+              inStamp = isStamp;
+              overlay.classList.toggle('visible', false);
+            };
+            eb._on('annotationeditormodechanged', ({ mode }) => {
+              setStampMode(mode === AnnotationEditorType.STAMP);
+              if (inStamp) {
+                setTimeout(() => document.getElementById('editorStampAddImage')?.focus?.(), 0);
+              }
+            });
+
+            const showOverlay = () => { if (inStamp) overlay.classList.add('visible'); };
+            const hideOverlay = () => overlay.classList.remove('visible');
+
+            const isImage = f => f && f.type && f.type.startsWith('image/');
+            const getDroppedImage = dt => {
+              if (!dt) return null;
+              const files = dt.files?.length ? Array.from(dt.files) : dt.items ? Array.from(dt.items).map(i => i.getAsFile()).filter(Boolean) : [];
+              return files.find(isImage) || null;
+            };
+
+            ['dragenter','dragover'].forEach(type => viewerContainer.addEventListener(type, evt => {
+              if (!inStamp) return;
+              evt.preventDefault();
+              showOverlay();
+            }));
+            ['dragleave','dragexit'].forEach(type => viewerContainer.addEventListener(type, () => hideOverlay()));
+            viewerContainer.addEventListener('drop', evt => {
+              if (!inStamp) return;
+              evt.preventDefault();
+              hideOverlay();
+              const file = getDroppedImage(evt.dataTransfer);
+              if (!file) return;
+              eb.dispatch('switchannotationeditorparams', {
+                source: window,
+                type: AnnotationEditorParamsType.CREATE,
+                value: { bitmapFile: file }
+              });
+            });
+          })();
         } else {
           // 兜底：延迟尝试一次
           setTimeout(ensureEditorButtons, 1000);
@@ -407,6 +463,7 @@
                         <button id="editorStampAddImage" class="toolbarButton labeled" type="button" tabindex="0" data-l10n-id="pdfjs-editor-stamp-add-image-button">
                           <span data-l10n-id="pdfjs-editor-stamp-add-image-button-label"></span>
                         </button>
+                        <div id="editorStampDropHint" class="toolbarLabel" data-l10n-id="demo-stamp-drop-hint"></div>
                       </div>
                     </div>
                   </div>
@@ -489,7 +546,7 @@
                   <button id="secondaryToolbarToggleButton" class="toolbarButton" type="button" tabindex="0" data-l10n-id="pdfjs-tools-button" aria-expanded="false" aria-haspopup="true" aria-controls="secondaryToolbar">
                     <span data-l10n-id="pdfjs-tools-button-label"></span>
                   </button>
-                  <div id="secondaryToolbar" class="hidden doorHangerRight menu" data-l10n-id="demo-secondary-toolbar">
+                  <div id="secondaryToolbar" class="hidden doorHangerRight menu">
                     <div id="secondaryToolbarButtonContainer" class="menuContainer">
                       <button id="secondaryOpenFile" class="toolbarButton labeled" type="button" tabindex="0" data-l10n-id="pdfjs-open-file-button">
                         <span data-l10n-id="pdfjs-open-file-button-label"></span>
@@ -524,7 +581,7 @@
                         <span data-l10n-id="pdfjs-page-rotate-ccw-button-label"></span>
                       </button>
                       <div class="horizontalToolbarSeparator"></div>
-                      <div id="cursorToolButtons" role="radiogroup" data-l10n-id="demo-cursor-tool-group">
+                      <div id="cursorToolButtons" role="radiogroup">
                         <button id="cursorSelectTool" class="toolbarButton labeled toggled" type="button" tabindex="0" data-l10n-id="pdfjs-cursor-text-select-tool-button" role="radio" aria-checked="true">
                           <span data-l10n-id="pdfjs-cursor-text-select-tool-button-label"></span>
                         </button>
@@ -533,7 +590,7 @@
                         </button>
                       </div>
                       <div class="horizontalToolbarSeparator"></div>
-                      <div id="scrollModeButtons" role="radiogroup" data-l10n-id="demo-scroll-mode-group">
+                      <div id="scrollModeButtons" role="radiogroup">
                         <button id="scrollPage" class="toolbarButton labeled" type="button" tabindex="0" data-l10n-id="pdfjs-scroll-page-button" role="radio" aria-checked="false">
                           <span data-l10n-id="pdfjs-scroll-page-button-label"></span>
                         </button>
@@ -548,7 +605,7 @@
                         </button>
                       </div>
                       <div class="horizontalToolbarSeparator"></div>
-                      <div id="spreadModeButtons" role="radiogroup" data-l10n-id="demo-spread-mode-group">
+                      <div id="spreadModeButtons" role="radiogroup">
                         <button id="spreadNone" class="toolbarButton labeled toggled" type="button" tabindex="0" data-l10n-id="pdfjs-spread-none-button" role="radio" aria-checked="true">
                           <span data-l10n-id="pdfjs-spread-none-button-label"></span>
                         </button>

@@ -273,6 +273,11 @@ class Toolbar {
           break;
       }
     });
+    // When the annotation editor UI manager is ready, enable editor buttons
+    // immediately so users can click without waiting for the first layer paint.
+    eventBus._on("annotationeditoruimanager", () => {
+      this.#editorModeChanged({ mode: AnnotationEditorType.NONE });
+    });
     eventBus._on("toolbardensity", this.#updateToolbarDensity.bind(this));
 
     if (editorHighlightColorPicker) {
@@ -329,6 +334,18 @@ class Toolbar {
       mode === AnnotationEditorType.STAMP,
       editorStampParamsToolbar
     );
+    // Auto-prompt image selection the first time Stamp mode is entered.
+    if (mode === AnnotationEditorType.STAMP) {
+      this._stampAutoPrompted ||= false;
+      // Ensure the params toolbar is visible and focus the primary action.
+      setTimeout(() => {
+        document.getElementById("editorStampAddImage")?.focus?.();
+        if (!this._stampAutoPrompted) {
+          this._stampAutoPrompted = true;
+          document.getElementById("editorStampAddImage")?.click?.();
+        }
+      }, 0);
+    }
     toggleExpandedBtn(
       editorSignatureButton,
       mode === AnnotationEditorType.SIGNATURE,

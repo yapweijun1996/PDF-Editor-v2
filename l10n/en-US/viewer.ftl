@@ -238,6 +238,20 @@ pdfjs-find-reached-bottom = Reached end of document, continued from top
 # Variables:
 #   $current (Number) - the index of the currently active find result
 #   $total (Number) - the total number of matches in the document
+
+## Demo-specific accessibility labels
+
+# Accessible name for the secondary tools menu container
+demo-secondary-toolbar =
+    .aria-label = Tools menu
+
+# Group labels for radiogroups in the secondary toolbar
+demo-cursor-tool-group =
+    .aria-label = Cursor tools
+demo-scroll-mode-group =
+    .aria-label = Scroll mode
+demo-spread-mode-group =
+    .aria-label = Page spread
 pdfjs-find-match-count =
     { $total ->
         [one] { $current } of { $total } match

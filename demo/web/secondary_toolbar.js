@@ -166,6 +166,17 @@ class SecondaryToolbar {
     this.#bindListeners(buttons);
 
     this.reset();
+
+    // Enhance keyboard UX for radio groups and focus management.
+    this.#setupRadioGroupKeyboardNavigation(
+      document.getElementById("cursorToolButtons")
+    );
+    this.#setupRadioGroupKeyboardNavigation(
+      document.getElementById("scrollModeButtons")
+    );
+    this.#setupRadioGroupKeyboardNavigation(
+      document.getElementById("spreadModeButtons")
+    );
   }
 
   /**
@@ -299,6 +310,9 @@ class SecondaryToolbar {
 
     const { toggleButton, toolbar } = this.#opts;
     toggleExpandedBtn(toggleButton, true, toolbar);
+
+    // Move focus into the menu for accessibility.
+    this.#focusFirstItem();
   }
 
   close() {
@@ -309,6 +323,9 @@ class SecondaryToolbar {
 
     const { toggleButton, toolbar } = this.#opts;
     toggleExpandedBtn(toggleButton, false, toolbar);
+
+    // Restore focus back to the toggle button.
+    toggleButton?.focus?.();
   }
 
   toggle() {
@@ -317,6 +334,94 @@ class SecondaryToolbar {
     } else {
       this.open();
     }
+  }
+
+  // Move focus to the first enabled control in the secondary toolbar.
+  #focusFirstItem() {
+    try {
+      const container = this.#opts.toolbar?.querySelector(
+        "#secondaryToolbarButtonContainer"
+      );
+      if (!container) return;
+      const items = container.querySelectorAll("button, a[href]");
+      for (const el of items) {
+        if (
+          el instanceof HTMLElement &&
+          !el.hasAttribute("disabled") &&
+          !el.classList.contains("hidden") &&
+          (el.offsetParent !== null || el.getClientRects().length > 0)
+        ) {
+          el.focus();
+          return;
+        }
+      }
+    } catch {}
+  }
+
+  // Enable arrow-key navigation within radiogroups (cursor/scroll/spread).
+  #setupRadioGroupKeyboardNavigation(groupEl) {
+    if (!groupEl) return;
+    const getButtons = () =>
+      Array.from(groupEl.querySelectorAll('button[role="radio"]'));
+
+    groupEl.addEventListener("keydown", evt => {
+      const buttons = getButtons();
+      if (!buttons.length) return;
+
+      const currentIndex = buttons.findIndex(btn => btn === document.activeElement);
+      const move = delta => {
+        // Find next enabled button, wrapping around.
+        let idx = currentIndex;
+        const len = buttons.length;
+        for (let i = 0; i < len; i++) {
+          idx = (idx + delta + len) % len;
+          const b = buttons[idx];
+          if (!b.hasAttribute("disabled")) {
+            b.focus();
+            // Activate selection to reflect the change immediately.
+            b.click();
+            break;
+          }
+        }
+      };
+
+      switch (evt.key) {
+        case "ArrowRight":
+        case "ArrowDown":
+          evt.preventDefault();
+          move(1);
+          break;
+        case "ArrowLeft":
+        case "ArrowUp":
+          evt.preventDefault();
+          move(-1);
+          break;
+        case "Home":
+          evt.preventDefault();
+          // Focus/select the first enabled item.
+          for (const b of buttons) {
+            if (!b.hasAttribute("disabled")) {
+              b.focus();
+              b.click();
+              break;
+            }
+          }
+          break;
+        case "End":
+          evt.preventDefault();
+          for (let i = buttons.length - 1; i >= 0; i--) {
+            const b = buttons[i];
+            if (!b.hasAttribute("disabled")) {
+              b.focus();
+              b.click();
+              break;
+            }
+          }
+          break;
+        default:
+          break;
+      }
+    });
   }
 }
 

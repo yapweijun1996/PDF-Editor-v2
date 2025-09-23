@@ -313,6 +313,8 @@ label[for="addSignatureDrawThickness"],
   background-color: var(--text-primary-color);
 }
 
+#editorCommentsSidebarCloseButton { font-size: 0 !important; }
+
 /* Count badge */
 #editorCommentsSidebarCount {
   min-width: 20px;

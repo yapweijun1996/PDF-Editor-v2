@@ -1,39 +1,32 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-- `src/`: core library code (e.g., `pdf.js`, workers, sandbox, shared utils).
-- `web/`: viewer UI, components, styles, and assets (e.g., `viewer.html`, `pdf_viewer.js`).
-- `test/`: Jasmine unit and integration tests, PDFs, and harness.
-- `examples/`, `demo/`: runnable samples for specific use cases.
-- `external/`: third‑party tooling and build helpers.
-- `l10n/`: localization resources. Generated/updated via tasks.
-- `build/`: generated artifacts (do not commit).
+## Demo‑First Overview
+This repo’s primary deliverable is the interactive demo in `demo/`, used to present the PDF editor. Optimize and iterate here first; the rest of the repo is reference and tooling.
 
-## Build, Test, and Development Commands
-- Install: `npm ci` (Node >= 20.16.x recommended).
-- Build viewer (generic): `npx gulp generic` → `build/generic/`.
-- Dev server: `npx gulp server --port 8888` (default 8888).
-- Lint all: `npx gulp lint` (add `--fix` to auto‑fix where possible).
-- Run tests: `npx gulp test` (full suite) or `npx gulp unittestcli` (CLI unit subset).
-- Clean: `npx gulp clean`.
+## Project Structure
+- `demo/index.html`: presentation entrypoint. Import map (demo/index.html:15) and viewer options (demo/index.html:65) live here.
+- `demo/web/`: viewer UI used by the demo (e.g., `viewer.js`, `app.js`). Save logic triggers on download (demo/web/app.js:1265).
+- `demo/src/`: library modules consumed by the demo (e.g., `pdf.worker.js`, `display/*`).
+- `demo/external/`: assets (cmaps, fonts, icc) referenced via viewer options.
+- `demo/l10n/`, `demo/locale/locale.json`: localization for labels and dialogs.
+- Reference only: `src/`, `web/`, `test/`, `external/` (root).
 
-## Coding Style & Naming Conventions
-- JavaScript modules (ESM) with 2‑space indentation and semicolons.
-- Filenames follow existing folder patterns: `web/` uses snake_case (e.g., `text_layer_builder.js`); `src/` includes dotted module names (e.g., `pdf.worker.js`). Keep imports stable.
-- Naming: camelCase for variables/functions, PascalCase for classes, SCREAMING_SNAKE_CASE for constants.
-- Lint/format via ESLint, Stylelint, Prettier, and SVGLint. Use `npx gulp lint [--fix]`.
-- Security: avoid unsanitized DOM usage; rules enforced by `eslint-plugin-no-unsanitized`.
+## Run & Build
+- Install once: `npm ci` (Node >= 20.16.x).
+- Serve locally: `npx gulp server --port 8888` and open `http://localhost:8888/demo/index.html`.
+- Lint (repo‑wide): `npx gulp lint` (add `--fix` to auto‑fix).
 
-## Testing Guidelines
-- Frameworks: Jasmine (unit), Puppeteer‑driven integration, plus reftests.
-- Locations: unit tests in `test/unit`, integration tests in `test/integration`.
-- Run all tests with `npx gulp test`. For quick checks, use `npx gulp unittestcli`.
-- Add tests for new features/bugfixes; include minimal PDFs under `test/pdfs/` when required.
+## Editing the Demo (what to tweak)
+- Default PDF: change `defaultUrl` (demo/index.html:71). Place files under `demo/web/` and use relative paths.
+- Feature toggles: enable/disable editor features in options (demo/index.html:65‑90).
+- Auto‑enter editing: adjust tool mappings (demo/index.html:186‑203).
+- Import map: add/retarget modules if you move files (demo/index.html:15‑55).
+- Save/Download: “Download” button saves when edits exist (demo/web/app.js:1265‑1306).
 
-## Commit & Pull Request Guidelines
-- Commits: imperative mood, concise subject, optional scope (e.g., `viewer: fix zoom reset on load`). Reference issues (`Fixes #123`).
-- PRs: clear description, linked issues, test plan, and screenshots/GIFs for UI changes (`web/`).
-- Keep changes focused; do not commit `build/` outputs. Ensure `npx gulp lint` and `npx gulp test` pass.
+## Coding Style
+- ESM, 2‑space indent, semicolons. `web/` uses snake_case; `src/` may use dotted module names.
+- Avoid unsanitized DOM; follow `eslint-plugin-no-unsanitized` rules. Run `npx gulp lint`.
 
-## Notes for Agents/Contributors
-- Follow existing headers and do not alter license text. Prefer `npx` over global CLIs. If adding dependencies, place vendor code under `external/` only when necessary.
+## Commit & Pull Requests
+- Commits: imperative, scoped when helpful (e.g., `demo: enable alt‑text by default`).
+- PRs: include a short demo video/GIF, steps to reproduce, and what changed in `demo/`. Keep changes focused; don’t commit generated artifacts.

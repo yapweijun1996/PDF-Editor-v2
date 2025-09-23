@@ -78,7 +78,7 @@
           cMapUrl: "./external/bcmaps/",
           standardFontDataUrl: "./external/standard_fonts/",
           iccUrl: "./external/iccs/",
-          wasmUrl: "/web/wasm/",
+          wasmUrl: "./web/wasm/",
           // 确保评论功能开启，并移除“了解更多”链接中的 Firefox 占位符
           enableComment: true,
           commentLearnMoreUrl: ""
@@ -120,6 +120,47 @@
             if (el) el.disabled = false;
           }
         };
+        // 增强评论编辑对话框的 UX（icon 关闭按钮、快捷键）
+        const enhanceCommentDialogUI = () => {
+          const dialog = document.getElementById('commentManagerDialog');
+          const toolbar = document.getElementById('commentManagerToolbar');
+          const cancelBtn = document.getElementById('commentManagerCancelButton');
+          const saveBtn = document.getElementById('commentManagerSaveButton');
+          const input = document.getElementById('commentManagerTextInput');
+          if (!dialog || !toolbar || !cancelBtn || !saveBtn || !input) return;
+
+          // Close button (icon-only)
+          if (!document.getElementById('commentManagerCloseButton')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.id = 'commentManagerCloseButton';
+            closeBtn.type = 'button';
+            closeBtn.title = 'Close';
+            closeBtn.setAttribute('aria-label', 'Close');
+            closeBtn.addEventListener('click', () => cancelBtn.click());
+            toolbar.appendChild(closeBtn);
+          }
+
+          // Submit on Ctrl/Cmd + Enter
+          input.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'Enter' || e.keyCode === 13)) {
+              if (!saveBtn.disabled) {
+                e.preventDefault();
+                saveBtn.click();
+              }
+            }
+          });
+
+          // Ensure no placeholder/fallback text leaks in
+          if (input && (input.textContent || input.value)) {
+            const t = (input.textContent || input.value).trim();
+            if (t.startsWith('pdfjs-editor-edit-comment-dialog-text-input')) {
+              input.value = '';
+              input.textContent = '';
+              input.setAttribute('placeholder', '');
+            }
+          }
+        };
+
         if (eb?._on) {
           eb._on("annotationeditoruimanager", ensureEditorButtons);
           eb._on("annotationeditorlayerrendered", ensureEditorButtons);
@@ -134,6 +175,7 @@
                 ta.setAttribute('placeholder', '');
               }
             }
+            enhanceCommentDialogUI();
           });
         } else {
           // 兜底：延迟尝试一次
@@ -148,6 +190,7 @@
                 ta.setAttribute('placeholder', '');
               }
             }
+            enhanceCommentDialogUI();
           }, 1200);
         }
       });

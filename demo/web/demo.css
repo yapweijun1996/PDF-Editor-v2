@@ -31,11 +31,236 @@
   font-size: 0 !important;
 }
 
-/* Comment dialog: hide title and button labels; hide placeholder text */
+/* Comment dialog: icon-only UI + polished look */
+/* Hide title text and button labels (keep aria only) */
 #commentManagerDialog .title span,
 #commentManagerDialog .dialogButtonsGroup button span {
   display: none !important;
 }
+/* No placeholder copy */
 #commentManagerTextInput::placeholder {
   color: transparent !important;
 }
+
+/* Neutralize inline dynamic bg color for better contrast; keep border color accent */
+#commentManagerDialog.dialog.commentManager {
+  background: var(--dialog-bg-color) !important;
+  /* preserve dynamic borderColor from editor color (set inline by code) */
+  box-shadow: 0 8px 24px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.12);
+  border-radius: 10px;
+  padding: 12px 12px 10px;
+}
+
+/* Title bar: compact, draggable area with a close icon */
+#commentManagerToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  cursor: move;
+}
+
+#commentManagerCloseButton {
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+#commentManagerCloseButton::before {
+  content: "";
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+  mask: url("images/messageBar_closingButton.svg") no-repeat center / 100% 100%;
+  background-color: var(--text-primary-color);
+}
+#commentManagerCloseButton:hover { background: var(--button-secondary-hover-bg-color); }
+#commentManagerCloseButton:active { background: var(--button-secondary-active-bg-color); }
+#commentManagerCloseButton:focus-visible { outline: var(--focus-ring-outline); }
+
+/* Textarea: clearer padding and readable color, without placeholder text */
+#commentManagerTextInput {
+  min-height: 132px;
+  padding: 10px 12px;
+  line-height: 1.4;
+  color: var(--input-text-fg-color);
+  background: var(--input-text-bg-color);
+}
+
+/* Bottom buttons: icon-only, squared and centered */
+#commentManagerDialog .dialogButtonsGroup {
+  gap: 8px;
+}
+#commentManagerDialog .dialogButtonsGroup button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#commentManagerCancelButton::before,
+#commentManagerSaveButton::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+#commentManagerCancelButton::before {
+  mask-image: url("images/messageBar_closingButton.svg");
+  background-color: var(--text-primary-color);
+}
+#commentManagerSaveButton::before {
+  mask-image: url("images/annotation-check.svg");
+  background-color: var(--button-primary-fg-color);
+}
+#commentManagerSaveButton:disabled::before {
+  opacity: var(--button-disabled-opacity);
+}
+
+/* Small screens: let dialog breathe */
+@media (max-width: 540px) {
+  #commentManagerDialog.dialog.commentManager {
+    width: min(92vw, 420px);
+  }
+}
+
+/* Alt-Text dialog: icon-only labels and buttons */
+#altTextDialog .title, /* hide heading text */
+#altTextDialog #dialogDescription, /* hide paragraph text */
+#altTextDialog .radioLabel span { /* hide radio descriptive text */
+  display: none !important;
+}
+/* Radio options as icon buttons */
+#altTextDialog .radioButton label {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+#altTextDialog .radioButton label::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  background-color: var(--text-primary-color);
+}
+#altTextDialog label[for="descriptionButton"]::before {
+  mask-image: url("images/altText_add.svg");
+}
+#altTextDialog label[for="decorativeButton"]::before {
+  mask-image: url("images/altText_done.svg");
+}
+#altTextDialog .radioButton input:checked + label,
+#altTextDialog .radioButton label:hover {
+  background: var(--button-secondary-hover-bg-color);
+}
+#descriptionTextarea::placeholder { color: transparent !important; }
+#altTextCancel > span,
+#altTextSave > span { display: none !important; }
+#altTextCancel,
+#altTextSave { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+#altTextCancel::before,
+#altTextSave::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+#altTextCancel::before { mask-image: url("images/messageBar_closingButton.svg"); background-color: var(--text-primary-color); }
+#altTextSave::before { mask-image: url("images/annotation-check.svg"); background-color: var(--button-primary-fg-color); }
+
+/* Signature dialogs: icon-only titles, tabs and buttons */
+#addSignatureDialog #addSignatureDialogLabel,
+#addSignatureDialog .title span,
+#editSignatureDescriptionDialog .title span { display: none !important; }
+/* Tabs as icon buttons */
+#addSignatureOptions > button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#addSignatureOptions > button::before {
+  content: "";
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  background-color: var(--text-primary-color);
+}
+#addSignatureTypeButton::before { mask-image: url("images/toolbarButton-editorFreeText.svg"); }
+#addSignatureDrawButton::before { mask-image: url("images/toolbarButton-editorInk.svg"); }
+#addSignatureImageButton::before { mask-image: url("images/toolbarButton-editorStamp.svg"); }
+#addSignatureOptions > button[aria-selected="true"] { background: var(--button-secondary-hover-bg-color); }
+
+/* Hide in-flow helper texts to keep UI icon-only */
+#addSignatureDrawPlaceholder { display: none !important; }
+label[for="addSignatureDrawThickness"],
+#addSignatureDescriptionContainer > label,
+#editSignatureDescriptionContainer > label { display: none !important; }
+
+/* Clear / Cancel / Save / Update buttons as icons */
+#clearSignatureButton > span,
+#addSignatureCancelButton > span,
+#addSignatureAddButton > span,
+#editSignatureCancelButton > span,
+#editSignatureUpdateButton > span { display: none !important; }
+
+#clearSignatureButton,
+#addSignatureCancelButton,
+#addSignatureAddButton,
+#editSignatureCancelButton,
+#editSignatureUpdateButton {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#clearSignatureButton::before,
+#addSignatureCancelButton::before,
+#addSignatureAddButton::before,
+#editSignatureCancelButton::before,
+#editSignatureUpdateButton::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+#clearSignatureButton::before { mask-image: url("images/editor-toolbar-delete.svg"); background-color: var(--text-primary-color); }
+#addSignatureCancelButton::before { mask-image: url("images/messageBar_closingButton.svg"); background-color: var(--text-primary-color); }
+#addSignatureAddButton::before { mask-image: url("images/annotation-check.svg"); background-color: var(--button-primary-fg-color); }
+#editSignatureCancelButton::before { mask-image: url("images/messageBar_closingButton.svg"); background-color: var(--text-primary-color); }
+#editSignatureUpdateButton::before { mask-image: url("images/annotation-check.svg"); background-color: var(--button-primary-fg-color); }
+#addSignatureAddButton:disabled::before,
+#editSignatureUpdateButton:disabled::before { opacity: var(--button-disabled-opacity); }

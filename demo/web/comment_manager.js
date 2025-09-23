@@ -449,8 +449,10 @@ class CommentSidebar {
     commentItem.role = "button";
     commentItem.className = "sidebarComment";
     commentItem.tabIndex = -1;
-    commentItem.style.backgroundColor =
-      (color && CommentManager._makeCommentColor(color, opacity)) || "";
+    const accent = color && CommentManager._makeCommentColor(color, opacity);
+    if (accent) {
+      commentItem.style.setProperty("--comment-accent-color", accent);
+    }
     const dateDiv = document.createElement("time");
     this.#setDate(dateDiv, modificationDate || creationDate);
 

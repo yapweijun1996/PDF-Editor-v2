@@ -79,6 +79,11 @@
           standardFontDataUrl: "./external/standard_fonts/",
           iccUrl: "./external/iccs/",
           wasmUrl: "./web/wasm/",
+          // 显式开启编辑相关能力
+          enableAltText: true,
+          enableSignatureEditor: true,
+          enableHighlightFloatingButton: true,
+          enableNewAltTextWhenAddingImage: true,
           // 确保评论功能开启，并移除“了解更多”链接中的 Firefox 占位符
           enableComment: true,
           commentLearnMoreUrl: ""
@@ -177,6 +182,25 @@
             }
             enhanceCommentDialogUI();
           });
+          // 进入编辑工具时自动进入编辑态（免第二次点击）
+          const autoEnterEdit = (btnId, mode) => {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            btn.addEventListener('click', () => {
+              // 等待 Toolbar 内部先切换模式，再二次派发附带 mustEnterInEditMode
+              setTimeout(() => {
+                if (btn.classList.contains('toggled')) {
+                  eb.dispatch('switchannotationeditormode', { mode, mustEnterInEditMode: true });
+                }
+              }, 0);
+            });
+          };
+          // 对常用工具启用“自动进入编辑态”
+          autoEnterEdit('editorFreeTextButton', 3);   // FREETEXT
+          autoEnterEdit('editorHighlightButton', 9);  // HIGHLIGHT
+          autoEnterEdit('editorInkButton', 15);       // INK
+          autoEnterEdit('editorStampButton', 13);     // STAMP
+          autoEnterEdit('editorSignatureButton', 101);// SIGNATURE
         } else {
           // 兜底：延迟尝试一次
           setTimeout(ensureEditorButtons, 1000);

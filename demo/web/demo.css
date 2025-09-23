@@ -1,0 +1,41 @@
+/* Demo-specific overrides to show icon-only main toolbar buttons */
+
+/* Hide label spans in the top toolbar and sidebar toolbar; keep secondaryToolbar labels. */
+#toolbarViewer .toolbarButton > span,
+#toolbarSidebar .toolbarButton > span,
+#toolbarViewer .toolbarButtonWithContainer > .toolbarButton > span {
+  display: none !important;
+}
+
+/* Ensure buttons remain square icon buttons */
+#toolbarViewer .toolbarButton,
+#toolbarViewer .toolbarButtonWithContainer > .toolbarButton {
+  aspect-ratio: 1;
+}
+
+/* Hide labels in secondary toolbar menu items as well */
+#secondaryToolbar .toolbarButton.labeled > span {
+  display: none !important;
+}
+
+/* Center icons in secondary toolbar items when labels are hidden */
+#secondaryToolbar .toolbarButton.labeled {
+  justify-content: center;
+  padding-inline-start: 0;
+}
+
+/* Hide any direct text nodes inside buttons (icon-only UI) */
+#toolbarViewer .toolbarButton,
+#toolbarSidebar .toolbarButton,
+#secondaryToolbar .toolbarButton {
+  font-size: 0 !important;
+}
+
+/* Comment dialog: hide title and button labels; hide placeholder text */
+#commentManagerDialog .title span,
+#commentManagerDialog .dialogButtonsGroup button span {
+  display: none !important;
+}
+#commentManagerTextInput::placeholder {
+  color: transparent !important;
+}

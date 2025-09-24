@@ -15,7 +15,12 @@
 
 /** @typedef {import("./event_utils.js").EventBus} EventBus */
 
-import { AnnotationEditorType, ColorPicker, noContextMenu } from "pdfjs-lib";
+import {
+  AnnotationEditorParamsType,
+  AnnotationEditorType,
+  ColorPicker,
+  noContextMenu,
+} from "pdfjs-lib";
 import {
   DEFAULT_SCALE,
   DEFAULT_SCALE_VALUE,
@@ -219,6 +224,34 @@ class Toolbar {
             isFromKeyboard: evt.detail === 0,
           });
         }
+        // Improve UX for Stamp: when entering STAMP mode, immediately
+        // surface the params menu and focus the primary action. This gives
+        // visible feedback even before async mode change finishes.
+        if (element === this.#opts.editorStampButton) {
+          const willEnterStamp = !this.#opts.editorStampButton.classList.contains(
+            "toggled"
+          );
+          if (willEnterStamp) {
+            try {
+              toggleExpandedBtn(
+                this.#opts.editorStampButton,
+                true,
+                this.#opts.editorStampParamsToolbar
+              );
+              // Focus the Add Image button for immediate affordance.
+              const addBtn = document.getElementById("editorStampAddImage");
+              addBtn?.focus?.();
+              // Best-effort: if the UI manager is already ready and the
+              // current layer exists, dispatch a CREATE so users with strict
+              // gesture policies can still get the picker with one click.
+              // (If the mode hasn't switched yet, the layer handler will no-op.)
+              eventBus.dispatch("switchannotationeditorparams", {
+                source: this,
+                type: AnnotationEditorParamsType.CREATE,
+              });
+            } catch {}
+          }
+        }
         if (telemetry) {
           eventBus.dispatch("reporttelemetry", {
             source: this,
@@ -334,23 +367,21 @@ class Toolbar {
       mode === AnnotationEditorType.STAMP,
       editorStampParamsToolbar
     );
-    // Auto-prompt image selection the first time Stamp mode is entered.
+    // When entering Stamp mode, ensure the params menu is open and focused.
     if (mode === AnnotationEditorType.STAMP) {
       this._stampAutoPrompted ||= false;
-      // Ensure the params toolbar is visible and focus the primary action.
-      setTimeout(() => {
-        document.getElementById("editorStampAddImage")?.focus?.();
-        if (!this._stampAutoPrompted) {
-          this._stampAutoPrompted = true;
-          document.getElementById("editorStampAddImage")?.click?.();
-        }
-      }, 0);
+      document.getElementById("editorStampAddImage")?.focus?.();
+      // Avoid programmatic clicks here to not violate browser user-gesture
+      // policies for file pickers. The explicit button remains available.
     }
     toggleExpandedBtn(
       editorSignatureButton,
       mode === AnnotationEditorType.SIGNATURE,
       editorSignatureParamsToolbar
     );
+    if (mode === AnnotationEditorType.SIGNATURE) {
+      document.getElementById("editorSignatureAddSignature")?.focus?.();
+    }
 
     editorCommentButton.disabled =
       editorFreeTextButton.disabled =

@@ -71,7 +71,7 @@ See https://github.com/adobe-type-tools/cmap-resources
           "web-download_manager": "./web/download_manager.js",
           "web-external_services": "./web/genericcom.js",
           "web-new_alt_text_manager": "./web/new_alt_text_manager.js",
-          "web-null_l10n": "./web/null_l10n.js",
+          "web-null_l10n": "./web/demo_l10n.js",
           "web-pdf_attachment_viewer": "./web/pdf_attachment_viewer.js",
           "web-pdf_cursor_tools": "./web/pdf_cursor_tools.js",
           "web-pdf_document_properties": "./web/pdf_document_properties.js",
@@ -854,6 +854,47 @@ See https://github.com/adobe-type-tools/cmap-resources
 
     </div> <!-- outerContainer -->
     <div id="printContainer"></div>
+    <script type="module">
+      // Force locale to one that exists, to ensure labels show up in Secondary Toolbar.
+      // If en-US resources are missing in ./l10n/en-US/, use a present locale (e.g., "uk").
+      const forceLocale = "uk"; // TODO: change to "en-US" if you add l10n/en-US/viewer.ftl later.
+      const applyL10n = async () => {
+        const Opt = window.PDFViewerApplicationOptions;
+        if (Opt?.set) {
+          try {
+            Opt.set("localeProperties", { lang: forceLocale, dir: "ltr" });
+          } catch {}
+        }
+        const app = window.PDFViewerApplication;
+        try {
+          await app?.initializedPromise;
+        } catch {}
+        try {
+          await app?.l10n?.setLanguage?.(forceLocale);
+          await app?.l10n?.translate?.(document.body);
+        } catch {}
+      };
+      // Run once after viewer init, and again after webviewerloaded as a fallback.
+      document.addEventListener("DOMContentLoaded", applyL10n, { once: true });
+      window.addEventListener("webviewerloaded", applyL10n, { once: true });
+    </script>
+    <script type="module">
+      // 强制在 App 初始化后执行一次翻译，避免偶发未挂载根元素导致的空文案。
+      const ensureL10n = async () => {
+        const app = window.PDFViewerApplication;
+        if (!app) return;
+        try {
+          await app.initializedPromise;
+          // 翻译整个容器（包括 secondary toolbar）
+          app.l10n?.translate?.(document.body);
+        } catch {}
+      };
+      // 初始尝试
+      ensureL10n();
+      // 在 webviewerloaded 或 DOMContentLoaded 后再尝试一次（容错）
+      window.addEventListener('webviewerloaded', ensureL10n, { once: true });
+      document.addEventListener('DOMContentLoaded', ensureL10n, { once: true });
+    </script>
     <script type="module">
       import { AnnotationEditorType } from './src/pdf.js';
 

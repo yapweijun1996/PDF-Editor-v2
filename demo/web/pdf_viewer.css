@@ -22,7 +22,7 @@
 @import url(sidebar.css);
 
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
 
   --viewer-container-height: 0;
   --pdfViewer-padding-bottom: 0;

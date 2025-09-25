@@ -902,7 +902,81 @@ See https://github.com/adobe-type-tools/cmap-resources
         }
 
         // Rely on PDF.js built-in handlers to toggle toolbars; avoid overriding default behavior.
+ 
+        // Close editor parameter toolbars (doorhangers) when clicking/tapping outside them.
+        // Use pointerdown to cover mouse/touch/pen; only close when the event target is not inside a toolbar.
+        const _isInsideEditorToolbar = (el) =>
+          !!el?.closest?.(
+            '.editorParamsToolbar, .doorHanger, .menu, .menuContainer, .editorParamsToolbarContainer'
+          );
 
+        // Ensure aria-expanded on the controller buttons stays in sync with panel visibility.
+        const _escapeId = (s) =>
+          window.CSS?.escape ? window.CSS.escape(s) : String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+
+        const _setControllerExpanded = (panelId, expanded) => {
+          if (!panelId) return;
+          const controller = document.querySelector(`[aria-controls="${_escapeId(panelId)}"]`);
+          if (controller) controller.setAttribute('aria-expanded', String(!!expanded));
+        };
+
+        const _closeEditorToolbars = () => {
+          for (const el of document.querySelectorAll('.editorParamsToolbar')) {
+            if (!el.classList.contains('hidden')) {
+              // Mark it was closed by an outside action, so clicking the same tool can re-open it.
+              el.dataset.closedByOutside = 'true';
+              el.classList.add('hidden');
+              _setControllerExpanded(el.id, false);
+            }
+          }
+        };
+        const viewerContainer = document.getElementById('viewerContainer');
+        if (viewerContainer) {
+          viewerContainer.addEventListener(
+            'pointerdown',
+            (evt) => {
+              if (_isInsideEditorToolbar(evt.target)) return;
+              _closeEditorToolbars();
+            },
+            { capture: true }
+          );
+        }
+        // Also support Escape to close any open parameter toolbar.
+        document.addEventListener('keydown', (evt) => {
+          if (evt.key === 'Escape') {
+            _closeEditorToolbars();
+          }
+        });
+
+        // Allow re-opening the same tool's panel after it was closed by outside-click/Escape.
+        // Important: intercept BEFORE the built-in toolbar click handler toggles the mode to NONE.
+        // If the button is already toggled (active tool) and its panel was closed externally,
+        // re-open the panel and prevent the built-in handler from switching modes.
+        const editorModeButtons = document.getElementById('editorModeButtons');
+        if (editorModeButtons) {
+          editorModeButtons.addEventListener('click', (evt) => {
+            const btn = evt.target?.closest?.('button[aria-controls]');
+            if (!btn || btn.disabled) return;
+            const panelId = btn.getAttribute('aria-controls');
+            const panel = panelId && document.getElementById(panelId);
+            if (!panel) return;
+
+            if (panel.dataset.closedByOutside === 'true' && btn.classList.contains('toggled')) {
+              // Stop the built-in handler from toggling the tool to NONE.
+              evt.preventDefault();
+              evt.stopPropagation();
+              if (typeof evt.stopImmediatePropagation === 'function') {
+                evt.stopImmediatePropagation();
+              }
+              // Re-open the panel and sync aria state.
+              panel.classList.remove('hidden');
+              panel.style.removeProperty('display');
+              btn.setAttribute('aria-expanded', 'true');
+              delete panel.dataset.closedByOutside;
+            }
+          }, { capture: true });
+        }
+ 
       });
     </script>
   </body>

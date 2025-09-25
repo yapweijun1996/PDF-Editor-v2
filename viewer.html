@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html dir="ltr" mozdisallowselectionprint>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>PDF.js Default Viewer (Demo)</title>
+
+    <link rel="stylesheet" href="./web/viewer.css" />
+    <link rel="stylesheet" href="./web/mobile.css" />
+    <link rel="resource" type="application/l10n" href="locale/locale.json" />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "pdfjs/": "./src/",
+          "pdfjs-lib": "./src/pdf.js",
+          "pdfjs-web/": "./web/",
+
+          "display-cmap_reader_factory": "./src/display/cmap_reader_factory.js",
+          "display-standard_fontdata_factory": "./src/display/standard_fontdata_factory.js",
+          "display-wasm_factory": "./src/display/wasm_factory.js",
+          "display-fetch_stream": "./src/display/fetch_stream.js",
+          "display-network": "./src/display/network.js",
+          "display-node_stream": "./src/display/stubs.js",
+          "display-node_utils": "./src/display/stubs.js",
+
+          "web-alt_text_manager": "./web/alt_text_manager.js",
+          "web-annotation_editor_params": "./web/annotation_editor_params.js",
+          "web-download_manager": "./web/download_manager.js",
+          "web-external_services": "./web/genericcom.js",
+          "web-new_alt_text_manager": "./web/new_alt_text_manager.js",
+          "web-null_l10n": "./web/null_l10n.js",
+          "web-pdf_attachment_viewer": "./web/pdf_attachment_viewer.js",
+          "web-pdf_cursor_tools": "./web/pdf_cursor_tools.js",
+          "web-pdf_document_properties": "./web/pdf_document_properties.js",
+          "web-pdf_find_bar": "./web/pdf_find_bar.js",
+          "web-pdf_layer_viewer": "./web/pdf_layer_viewer.js",
+          "web-pdf_outline_viewer": "./web/pdf_outline_viewer.js",
+          "web-pdf_presentation_mode": "./web/pdf_presentation_mode.js",
+          "web-pdf_sidebar": "./web/pdf_sidebar.js",
+          "web-pdf_thumbnail_viewer": "./web/pdf_thumbnail_viewer.js",
+          "web-preferences": "./web/genericcom.js",
+          "web-print_service": "./web/pdf_print_service.js",
+          "web-secondary_toolbar": "./web/secondary_toolbar.js",
+          "web-signature_manager": "./web/signature_manager.js",
+          "web-toolbar": "./web/toolbar.js"
+        }
+      }
+    </script>
+    <!-- Preload worker to enable fake-worker path if needed -->
+    <script type="module" src="./src/pdf.worker.js"></script>
+    <script src="./web/viewer.js" type="module"></script>
+  </head>
+  <body tabindex="0">
+    <!-- Default viewer markup -->
+    
+    <!--#include viewer-snippet.html-->
+    
+    <div id="outerContainer">
+      <span id="viewer-alert" class="visuallyHidden" role="alert"></span>
+
+      <div id="sidebarContainer">
+        <div id="toolbarSidebar" class="toolbarHorizontalGroup">
+          <div id="toolbarSidebarLeft">
+            <div id="sidebarViewButtons" class="toolbarHorizontalGroup toggled" role="radiogroup">
+              <button id="viewThumbnail" class="toolbarButton toggled" type="button" tabindex="0" data-l10n-id="pdfjs-thumbs-button" role="radio" aria-checked="true" aria-controls="thumbnailView">
+                 <span data-l10n-id="pdfjs-thumbs-button-label"></span>
+              </button>
+              <button id="viewOutline" class="toolbarButton" type="button" tabindex="0" data-l10n-id="pdfjs-document-outline-button" role="radio" aria-checked="false" aria-controls="outlineView">
+                 <span data-l10n-id="pdfjs-document-outline-button-label"></span>
+              </button>
+              <button id="viewAttachments" class="toolbarButton" type="button" tabindex="0" data-l10n-id="pdfjs-attachments-button" role="radio" aria-checked="false" aria-controls="attachmentsView">
+                 <span data-l10n-id="pdfjs-attachments-button-label"></span>
+              </button>
+              <button id="viewLayers" class="toolbarButton" type="button" tabindex="0" data-l10n-id="pdfjs-layers-button" role="radio" aria-checked="false" aria-controls="layersView">
+                 <span data-l10n-id="pdfjs-layers-button-label"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="sidebarContent">
+          <div id="thumbnailView"></div>
+          <div id="outlineView" class="hidden"></div>
+          <div id="attachmentsView" class="hidden"></div>
+          <div id="layersView" class="hidden"></div>
+        </div>
+        <div id="sidebarResizer"></div>
+      </div>
+
+      <div id="mainContainer">
+        <div class="toolbar">
+          <div id="toolbarContainer"></div>
+        </div>
+
+        <div id="viewerContainer">
+          <div id="viewer" class="pdfViewer"></div>
+        </div>
+      </div>
+
+      <div id="dialogContainer"></div>
+    </div>
+
+    <!-- Post-init: enforce editor mode + require annotation to save -->
+    <script type="module">
+      import { AnnotationEditorType } from './src/pdf.js';
+      window.addEventListener('DOMContentLoaded', () => {
+        const app = window.PDFViewerApplication;
+        const bus = app?.eventBus;
+        if (!bus) return;
+        // 进入默认编辑模式（文本）
+        bus._on('annotationeditoruimanager', () => {
+          try {
+            app.pdfViewer.annotationEditorMode = { mode: AnnotationEditorType.FREETEXT };
+          } catch {}
+        });
+        // 批注必填：无批注时禁用保存按钮
+        bus._on('annotationeditorstateschanged', ({ details }) => {
+          const saveBtn = document.getElementById('downloadButton');
+          if (saveBtn && typeof details?.isEmpty === 'boolean') {
+            saveBtn.disabled = details.isEmpty;
+          }
+        });
+      });
+    </script>
+  </body>
+  </html>
+

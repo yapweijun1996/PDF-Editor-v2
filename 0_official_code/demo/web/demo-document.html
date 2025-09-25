@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF编辑器演示文档</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #007acc;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border-left: 4px solid #28a745;
+            background-color: #f8f9fa;
+        }
+        .highlight-box {
+            background-color: #fff3cd;
+            border: 2px dashed #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .image-placeholder {
+            width: 200px;
+            height: 150px;
+            background: linear-gradient(45deg, #e9ecef 25%, transparent 25%),
+                        linear-gradient(-45deg, #e9ecef 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #e9ecef 75%),
+                        linear-gradient(-45deg, transparent 75%, #e9ecef 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            display: inline-block;
+            margin: 10px;
+            border: 2px solid #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .signature-area {
+            border: 2px dotted #dc3545;
+            padding: 30px;
+            margin: 20px 0;
+            text-align: center;
+            background-color: #f8d7da;
+        }
+        .comment-area {
+            border-left: 4px solid #007bff;
+            padding-left: 15px;
+            margin: 15px 0;
+            font-style: italic;
+            color: #495057;
+        }
+        .important-note {
+            background-color: #d1ecf1;
+            border: 2px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .code-block {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            overflow-x: auto;
+        }
+        .form-section {
+            background-color: #e7f3ff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .form-field {
+            margin: 10px 0;
+        }
+        label {
+            display: inline-block;
+            width: 150px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="email"], textarea {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            width: 300px;
+        }
+        textarea {
+            height: 80px;
+            vertical-align: top;
+        }
+        .submit-btn {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .submit-btn:hover {
+            background-color: #218838;
+        }
+        .chart-placeholder {
+            width: 300px;
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            margin: 20px auto;
+            border-radius: 10px;
+        }
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #6c757d;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PDF编辑器功能演示文档</h1>
+        <p>这是一个专门用于展示PDF编辑功能的演示文档，包含各种元素类型以便测试不同的编辑功能。</p>
+    </div>
+
+    <div class="section">
+        <h2>📝 文本高亮测试区域</h2>
+        <p>这是一个普通的文本段落，您可以使用<strong>高亮工具</strong>来标记重要的内容。PDF编辑器支持多种颜色和粗细的高亮标注功能。</p>
+
+        <div class="highlight-box">
+            <h3>重要提示</h3>
+            <p>这是一个需要重点关注的内容区域。您可以对这段文字进行高亮、添加注释或进行其他编辑操作。</p>
+            <ul>
+                <li>支持多选高亮</li>
+                <li>可以调整高亮颜色</li>
+                <li>支持不同粗细设置</li>
+                <li>可以添加备注说明</li>
+            </ul>
+        </div>
+
+        <p>在阅读技术文档时，高亮功能特别有用。您可以快速标记关键信息，便于后续查阅和复习。</p>
+    </div>
+
+    <div class="section">
+        <h2>✏️ 自由文本编辑测试</h2>
+        <p>自由文本工具允许您在PDF的任何位置添加文本注释、说明或批注。</p>
+
+        <div class="comment-area">
+            <p>💡 <strong>在此处添加您的注释：</strong></p>
+            <p>您可以使用不同颜色、字体大小和样式来自定义文本注释的外观。</p>
+        </div>
+
+        <div class="important-note">
+            <h4>📋 待办事项</h4>
+            <ul>
+                <li>☐ 审查文档内容</li>
+                <li>☐ 添加技术注释</li>
+                <li>☐ 标记需要修改的部分</li>
+                <li>☐ 完成最终审核</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🖼️ 图片和印章测试区域</h2>
+        <p>以下区域可以用于测试印章、签名和图片添加功能：</p>
+
+        <div class="image-placeholder">
+            图片占位符<br>
+            (用于测试印章功能)
+        </div>
+
+        <div class="signature-area">
+            <h3>📄 签名区域</h3>
+            <p>在此处添加您的数字签名</p>
+            <p><em>支持绘制签名、文字签名和图片签名</em></p>
+        </div>
+
+        <div class="chart-placeholder">
+            📊 图表占位符<br>
+            (用于测试图片批注功能)
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>💻 代码示例区域</h2>
+        <p>以下是代码示例，您可以对其进行高亮、注释等操作：</p>
+
+        <div class="code-block">
+function calculateSum(numbers) {
+    // 这是一个简单的求和函数
+    let sum = 0;
+    for (let i = 0; i < numbers.length; i++) {
+        sum += numbers[i];
+    }
+    return sum;
+}
+
+// 使用示例
+const result = calculateSum([1, 2, 3, 4, 5]);
+console.log('计算结果:', result);
+        </div>
+
+        <div class="comment-area">
+            <p>🔍 <strong>代码审查要点：</strong></p>
+            <ul>
+                <li>函数命名是否清晰？</li>
+                <li>变量命名是否符合规范？</li>
+                <li>是否有边界条件处理？</li>
+                <li>代码是否需要优化？</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📋 表单测试区域</h2>
+        <p>这是一个表单示例，您可以测试在表单元素上的编辑功能：</p>
+
+        <div class="form-section">
+            <h3>用户信息表单</h3>
+
+            <div class="form-field">
+                <label for="name">姓名：</label>
+                <input type="text" id="name" placeholder="请输入您的姓名">
+            </div>
+
+            <div class="form-field">
+                <label for="email">邮箱：</label>
+                <input type="email" id="email" placeholder="请输入您的邮箱地址">
+            </div>
+
+            <div class="form-field">
+                <label for="comments">备注：</label>
+                <textarea id="comments" placeholder="请输入您的备注信息"></textarea>
+            </div>
+
+            <button class="submit-btn">提交表单</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🎯 综合编辑测试</h2>
+        <p>这是一个综合测试区域，您可以尝试各种编辑功能：</p>
+
+        <div class="highlight-box">
+            <h4>多重编辑测试</h4>
+            <p>您可以同时使用多种编辑工具在这个区域进行操作，包括：</p>
+            <ul>
+                <li>📝 文本高亮</li>
+                <li>✏️ 自由文本</li>
+                <li>🔍 添加注释</li>
+                <li>📌 绘制图形</li>
+            </ul>
+        </div>
+
+        <div class="important-note">
+            <h4>编辑功能说明</h4>
+            <p>PDF编辑器提供了丰富的编辑功能，包括但不限于：</p>
+            <ul>
+                <li>高亮标注 - 快速标记重要内容</li>
+                <li>自由文本 - 在任意位置添加注释</li>
+                <li>墨迹绘制 - 手写批注和绘图</li>
+                <li>印章工具 - 添加预设或自定义印章</li>
+                <li>数字签名 - 电子签名功能</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>📄 PDF编辑器演示文档 - 版本 1.0</p>
+        <p>此文档专为展示PDF编辑功能而设计，包含各种元素类型以便全面测试编辑功能。</p>
+    </div>
+</body>
+</html>

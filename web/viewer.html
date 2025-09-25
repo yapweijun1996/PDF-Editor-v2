@@ -770,8 +770,8 @@ See https://github.com/adobe-type-tools/cmap-resources
           </div>
        </dialog>
 
-       <dialog class="dialog signatureDialog" id="editSignatureDescriptionDialog" aria-labelledby="editSignatureDescriptionTitle">
-        <div id="editSignatureDescriptionContainer" class="mainContainer">
+       <dialog class="dialog signatureDialog" id="editSignatureDescriptionDialog" aria-labelledby="editSignatureDescriptionTitle" role="dialog" aria-modal="true">
+        <div id="editSignatureDescriptionMain" class="mainContainer">
           <div class="title">
             <span id="editSignatureDescriptionTitle" role="sectionhead" data-l10n-id="pdfjs-editor-edit-signature-dialog-title" tabindex="0"></span>
           </div>
@@ -780,10 +780,10 @@ See https://github.com/adobe-type-tools/cmap-resources
               <label for="editSignatureDescInput" data-l10n-id="pdfjs-editor-add-signature-description-label"></label>
               <span id="editSignatureDescription" class="inputWithClearButton">
                 <input id="editSignatureDescInput" type="text" data-l10n-id="pdfjs-editor-add-signature-description-input" tabindex="0"></input>
-                <button class="clearInputButton" type="button" tabindex="0" aria-hidden="true"></button>
+                <button class="clearInputButton" type="button" tabindex="0" aria-label="Clear description" title="Clear description"></button>
               </span>
             </div>
-            <svg id="editSignatureView" xmlns="http://www.w3.org/2000/svg"></svg>
+            <svg id="editSignatureView" xmlns="http://www.w3.org/2000/svg" role="img"></svg>
           </div>
           <div class="dialogButtonsGroup">
             <button id="editSignatureCancelButton" type="button" class="secondaryButton" tabindex="0"><span data-l10n-id="pdfjs-editor-add-signature-cancel-button"></span></button>
